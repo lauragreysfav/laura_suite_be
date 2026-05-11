@@ -1,0 +1,159 @@
+blobs_path: /root/.stash/blobs
+blobs_storage: FILESYSTEM
+cache: /cache
+calculate_md5: false
+create_galleries_from_folders: true
+create_image_clip_from_videos: false
+cssenabled: true
+dangerous_allow_public_without_auth: "false"
+database: /root/.stash/stash-go.sqlite
+defaults:
+    scan_task:
+        rescan: true
+        scangenerateclippreviews: true
+        scangeneratecovers: true
+        scangenerateimagephashes: true
+        scangenerateimagepreviews: false
+        scangeneratephashes: true
+        scangeneratepreviews: true
+        scangeneratesprites: true
+        scangeneratethumbnails: true
+gallery_cover_regex: (poster|cover|folder|board)\.[^\.]+$
+generated: /generated
+host: 0.0.0.0
+jwt_secret_key: b8f6dc0bf69b7640e02b9ff94fe892674effee60c8db2654b2af57550ca93031
+maximum_sprites: 500
+minimum_sprites: 10
+no_proxy: localhost,127.0.0.1,192.168.0.0/16,10.0.0.0/8,172.16.0.0/12
+nobrowser: false
+notifications_enabled: true
+parallel_tasks: 1
+plugins:
+    disabled:
+        - Theme-BlackHole
+    package_sources:
+        - localpath: community
+          name: Community (stable)
+          url: https://stashapp.github.io/CommunityScripts/stable/index.yml
+        - localpath: carrotwaxr
+          name: carrotwaxr stash-plugins
+          url: https://carrotwaxr.github.io/stash-plugins/stable/index.yml
+        - localpath: feederbox826
+          name: feederbox826 plugins
+          url: https://feederbox826.github.io/plugins/main/index.yml
+plugins_path: /root/.stash/plugins
+port: 9999
+preview_audio: true
+preview_exclude_end: "0"
+preview_exclude_start: "0"
+preview_segment_duration: 0.75
+preview_segments: 12
+scrapers:
+    package_sources:
+        - localpath: community
+          name: Community (stable)
+          url: https://stashapp.github.io/CommunityScrapers/stable/index.yml
+scrapers_path: /root/.stash/scrapers
+security_tripwire_accessed_from_public_internet: ""
+sequential_scanning: false
+session_store_key: 6f567387f7274d16225894a07be23bd14e21f2857cbf802af0ee26f873bb9fb9
+show_one_time_moved_notification: false
+sound_on_preview: false
+sprite_interval: 30
+sprite_screenshot_width: 160
+stash:
+    - path: /data/torbox
+    - path: /data/lauramedia/Scenes
+    - path: /data/lauramedia/Clips
+    - path: /data/lauramedia/Favorites
+    - path: /data/lauramedia/GIFs
+    - path: /data/lauramedia/Images
+stash_boxes:
+    - apikey: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1aWQiOiIwMTllMTM4Ni1jMzA4LTc2ZjYtOGFhNS1kODUzMmQ0NzRkOTciLCJzdWIiOiJBUElLZXkiLCJpYXQiOjE3Nzg0NDQwNTl9.w19mHtKbaz1x5aYnCOsXXVAnwe7rjbMS1L7t0Ow6DLY
+      endpoint: https://stashdb.org/graphql
+      maxrequestsperminute: 0
+      name: StashDB.org
+theme_color: '#191919'
+ui:
+    frontPageContent:
+        - __typename: CustomFilter
+          direction: DESC
+          message:
+            id: recently_released_objects
+            values:
+                objects: Scenes
+          mode: SCENES
+          sortBy: date
+        - __typename: CustomFilter
+          direction: DESC
+          message:
+            id: recently_added_objects
+            values:
+                objects: Studios
+          mode: STUDIOS
+          sortBy: created_at
+        - __typename: CustomFilter
+          direction: DESC
+          message:
+            id: recently_released_objects
+            values:
+                objects: Groups
+          mode: GROUPS
+          sortBy: date
+        - __typename: CustomFilter
+          direction: DESC
+          message:
+            id: recently_added_objects
+            values:
+                objects: Performers
+          mode: PERFORMERS
+          sortBy: created_at
+        - __typename: CustomFilter
+          direction: DESC
+          message:
+            id: recently_released_objects
+            values:
+                objects: Galleries
+          mode: GALLERIES
+          sortBy: date
+    lastNoteSeen: 20251026
+    taggerConfig:
+        blacklist:
+            - \sXXX\s
+            - 1080p
+            - 720p
+            - 2160p
+            - KTR
+            - RARBG
+            - \scom\s
+            - \[
+            - \]
+        createParentStudios: true
+        createParentTags: true
+        excludedPerformerFields:
+            - name
+        excludedStudioFields:
+            - name
+        excludedTagFields:
+            - name
+        fingerprintQueue: {}
+        markSceneAsOrganizedOnSave: false
+        mode: auto
+        selectedEndpoint: https://stashdb.org/graphql
+        setCoverImage: true
+        setTags: true
+        tagOperation: merge
+    taskDefaults:
+        scan:
+            rescan: false
+            scanGenerateClipPreviews: true
+            scanGenerateCovers: true
+            scanGenerateImagePhashes: true
+            scanGenerateImagePreviews: false
+            scanGeneratePhashes: true
+            scanGeneratePreviews: true
+            scanGenerateSprites: true
+            scanGenerateThumbnails: true
+use_custom_sprite_interval: false
+video_file_naming_algorithm: OSHASH
+write_image_thumbnails: true

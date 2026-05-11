@@ -1,0 +1,14 @@
+.env
+.git
+.gitignore
+__pycache__/
+*.pyc
+.DS_Store
+*.md
+docs/
+scripts/
+config/prowlarr/logs/
+config/whisparr/logs/
+config/stash/logs/
+data/
+torrents/

@@ -1,0 +1,17 @@
+<Config>
+  <Port>9696</Port>
+  <EnableSsl>False</EnableSsl>
+  <LogLevel>debug</LogLevel>
+  <UrlBase></UrlBase>
+  <LaunchBrowser>True</LaunchBrowser>
+  <Branch>master</Branch>
+  <AuthenticationMethod>None</AuthenticationMethod>
+  <ApiKey>fdd5c4ef67e74e12b5e6c81f2c354527</ApiKey>
+  <AuthenticationRequired>Enabled</AuthenticationRequired>
+  <BindAddress>*</BindAddress>
+  <SslPort>6969</SslPort>
+  <SslCertPath></SslCertPath>
+  <SslCertPassword></SslCertPassword>
+  <InstanceName>Prowlarr</InstanceName>
+  <UpdateMechanism>Docker</UpdateMechanism>
+</Config>
