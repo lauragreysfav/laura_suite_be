@@ -57,3 +57,27 @@ def search(query: str, indexer_ids: list[int] = None) -> list:
     except Exception as e:
         logger.exception("prowlarr_search_failed", extra={"query": query, "error": str(e)})
         raise
+
+
+def get_indexer(indexer_id: int) -> dict:
+    return _get(f"/indexer/{indexer_id}")
+
+
+def add_indexer(data: dict) -> dict:
+    url = f"{PROWLARR_URL}/api/v1/indexer"
+    r = httpx.post(url, json=data, headers=_headers(), timeout=TIMEOUT)
+    r.raise_for_status()
+    return r.json()
+
+
+def update_indexer(indexer_id: int, data: dict) -> dict:
+    url = f"{PROWLARR_URL}/api/v1/indexer/{indexer_id}"
+    r = httpx.put(url, json=data, headers=_headers(), timeout=TIMEOUT)
+    r.raise_for_status()
+    return r.json()
+
+
+def delete_indexer(indexer_id: int) -> None:
+    url = f"{PROWLARR_URL}/api/v1/indexer/{indexer_id}"
+    r = httpx.delete(url, headers=_headers(), timeout=TIMEOUT)
+    r.raise_for_status()

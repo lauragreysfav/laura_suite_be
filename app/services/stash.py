@@ -200,3 +200,28 @@ def find_scenes_by_studio(studio_id: str, page: int = 1, per_page: int = 100) ->
     }
     """
     return _query(q, {"filter": filter, "scene_filter": scene_filter})
+
+
+def check_scene_exists(info_hash: str = None, title: str = None) -> dict:
+    # First try hash if available
+    if info_hash:
+        q = """
+        query FindScenesByHash($hash: String!) {
+          findScenes(filter: {q: $hash}) {
+            scenes { id files { path } }
+          }
+        }
+        """
+        res = _query(q, {"hash": info_hash})
+        scenes = res.get("data", {}).get("findScenes", {}).get("scenes", [])
+        if scenes:
+            return {"exists": True, "path": scenes[0]["files"][0]["path"]}
+
+    # Fallback to title search
+    if title:
+        res = find_scenes(query=title, per_page=1)
+        scenes = res.get("data", {}).get("findScenes", {}).get("scenes", [])
+        if scenes:
+            return {"exists": True, "path": scenes[0]["files"][0]["path"]}
+
+    return {"exists": False, "path": None}

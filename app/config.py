@@ -43,8 +43,12 @@ class Settings(BaseSettings):
     celery_broker_url: str = "redis://redis:6379/0"
     celery_result_backend: str = "redis://redis:6379/0"
     cors_origins: str = "http://localhost:5173,http://127.0.0.1:5173"
+    gluetun_token: str = ""
 
-    model_config = {"env_file": str(Path(__file__).parent.parent / ".env")}
+    model_config = {
+        "env_file": str(Path(__file__).parent.parent / ".env"),
+        "extra": "ignore"
+    }
 
 
 settings = Settings()

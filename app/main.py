@@ -6,7 +6,7 @@ from app.database import init_db
 from app.logger import setup_logging
 from app.middleware.logging_middleware import logging_middleware
 from app.config import settings
-from app.api.v1 import torrents, system, library, stash, whisparr, prowlarr, auth, search, trackers, watch, email, recommender, stats
+from app.api.v1 import torrents, system, library, stash, whisparr, prowlarr, auth, search, trackers, watch, email, recommender, stats, metrics
 
 logger = setup_logging()
 
@@ -46,6 +46,7 @@ app.include_router(watch.router, prefix="/api/v1")
 app.include_router(email.router, prefix="/api/v1")
 app.include_router(recommender.router, prefix="/api/v1")
 app.include_router(stats.router, prefix="/api/v1")
+app.include_router(metrics.router, prefix="/api/v1")
 
 
 @app.get("/")

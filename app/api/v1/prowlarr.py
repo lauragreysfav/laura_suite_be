@@ -1,4 +1,4 @@
-from fastapi import APIRouter, HTTPException, Query
+from fastapi import APIRouter, HTTPException, Query, Request
 from app.services import prowlarr
 
 router = APIRouter(prefix="/prowlarr", tags=["prowlarr"])
@@ -8,6 +8,33 @@ router = APIRouter(prefix="/prowlarr", tags=["prowlarr"])
 def get_indexers():
     try:
         return prowlarr.list_indexers()
+    except Exception as e:
+        raise HTTPException(status_code=502, detail=str(e))
+
+
+@router.post("/indexers")
+async def create_indexer(request: Request):
+    try:
+        data = await request.json()
+        return prowlarr.add_indexer(data)
+    except Exception as e:
+        raise HTTPException(status_code=502, detail=str(e))
+
+
+@router.put("/indexers/{indexer_id}")
+async def update_indexer(indexer_id: int, request: Request):
+    try:
+        data = await request.json()
+        return prowlarr.update_indexer(indexer_id, data)
+    except Exception as e:
+        raise HTTPException(status_code=502, detail=str(e))
+
+
+@router.delete("/indexers/{indexer_id}")
+def delete_indexer(indexer_id: int):
+    try:
+        prowlarr.delete_indexer(indexer_id)
+        return {"status": "ok"}
     except Exception as e:
         raise HTTPException(status_code=502, detail=str(e))
 
