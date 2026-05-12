@@ -42,10 +42,10 @@ def system_status() -> dict:
     return _get("/system/status")
 
 
-def search(query: str, indexer_ids: list[int] = None) -> list:
+def search(query: str, tag: str = None) -> list:
     params = {"query": query}
-    if indexer_ids:
-        params["indexerIds"] = ",".join(str(i) for i in indexer_ids)
+    if tag:
+        params["tags"] = tag
     url = f"{PROWLARR_URL}/api/v1/search"
     try:
         r = httpx.get(url, params=params, headers=_headers(), timeout=60)

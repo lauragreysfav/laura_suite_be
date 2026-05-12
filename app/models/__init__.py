@@ -176,3 +176,11 @@ class LibraryTorrentPreview(Base):
     id = Column(Integer, primary_key=True)
     torrent_id = Column(Integer, ForeignKey("library_torrents.id"), nullable=False)
     image_url = Column(Text, nullable=False)
+
+
+class LibraryAction(Base):
+    __tablename__ = "library_actions"
+    id = Column(Integer, primary_key=True)
+    torrent_id = Column(Integer, ForeignKey("library_torrents.id"), nullable=False)
+    action_type = Column(String(50), nullable=False)  # sent, dl, viewed
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
