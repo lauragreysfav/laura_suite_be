@@ -1,10 +1,12 @@
 import httpx
+from app.config import settings
 
 STASHDB_URL = "https://stashdb.org/graphql"
 
 
 def _query(query: str, variables: dict = None) -> dict:
-    r = httpx.post(STASHDB_URL, json={"query": query, "variables": variables or {}}, timeout=15)
+    headers = {"ApiKey": settings.stashdb_api_key} if settings.stashdb_api_key else {}
+    r = httpx.post(STASHDB_URL, json={"query": query, "variables": variables or {}}, headers=headers, timeout=15)
     r.raise_for_status()
     return r.json()
 
@@ -14,15 +16,11 @@ def search_performers(query: str):
     query SearchPerformers($input: PerformerQueryInput!) {
       queryPerformers(input: $input) {
         count
-        performers {
-          id
-          name
-          aliases
-          gender
-          urls { url type }
-          images { url }
-          career_start_year
-          career_end_year
+        performers { 
+          id 
+          name 
+          aliases 
+          images { url } 
         }
       }
     }
@@ -30,22 +28,22 @@ def search_performers(query: str):
     return _query(q, {"input": {"names": query, "page": 1, "per_page": 20}})
 
 
-def search_studios(query: str):
+def find_by_hash(info_hash: str):
     q = """
-    query SearchStudios($input: StudioQueryInput!) {
-      queryStudios(input: $input) {
-        count
-        studios {
-          id
-          name
-          aliases
-          urls { url type }
-          images { url }
+    query FindByHash($hash: String!) {
+      findScenes(scene_filter: { fingerprint: { value: $hash, modifier: EQUALS } }) {
+        scenes { 
+          id 
+          title 
+          details 
+          images { url } 
+          studio { name } 
+          performers { name } 
         }
       }
     }
     """
-    return _query(q, {"input": {"name": query, "page": 1, "per_page": 20}})
+    return _query(q, {"hash": info_hash})
 
 
 def get_performer(performer_id: str):
@@ -56,20 +54,8 @@ def get_performer(performer_id: str):
         name
         aliases
         gender
-        birthdate
-        ethnicity
-        country
-        eye_color
-        hair_color
-        height
-        measurements
-        breast_type
-        tattoos { location description }
-        piercings { location description }
         urls { url type }
         images { url }
-        career_start_year
-        career_end_year
       }
     }
     """

@@ -14,6 +14,7 @@ class Settings(BaseSettings):
 
     stash_url: str = "http://localhost:9999"
     stash_api_key: str = ""
+    stashdb_api_key: str = ""
 
     whisparr_url: str = "http://whisparr:6969"
     whisparr_api_key: str = ""
