@@ -1,0 +1,12 @@
+id: quicksave
+name: quicksave
+metadata:
+  description: adds quick backups to stash
+version: 0.1.0-29924c1
+date: "2026-01-06 19:19:09"
+requires: []
+source_repository: https://feederbox826.github.io/plugins/main/index.yml
+files:
+- README.md
+- quicksave.yml
+- quicksave.js

@@ -1,0 +1,13 @@
+id: watched-video
+name: Watched Video Icon
+metadata:
+  description: Adds icon and css class to watched videos
+version: 0.1.0-5b35bcf
+date: "2024-06-03 07:32:23"
+requires: []
+source_repository: https://feederbox826.github.io/plugins/main/index.yml
+files:
+- README.md
+- watched-video.js
+- watched-video.yml
+- watched-video.css

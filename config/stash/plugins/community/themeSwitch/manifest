@@ -1,0 +1,45 @@
+id: themeSwitch
+name: Theme Switch
+metadata:
+  description: Theme and CSS script manager located in main menu bar top right.
+version: 2.1.2-43feb59
+date: "2025-12-20 01:59:59"
+requires: []
+source_repository: https://stashapp.github.io/CommunityScripts/stable/index.yml
+files:
+- themeSwitch.yml
+- README.MD
+- assets/themes/materialize/source.txt
+- assets/themes/materialize/stash-theme.css
+- assets/snippets/studios/more-studios-row.css
+- assets/snippets/studios/different-studio-cards-layout.css
+- assets/snippets/movies/desktop-better-layout-larger.css
+- assets/snippets/movies/desktop-better-layout-regular.css
+- assets/snippets/performers/performer-image-as-backdrop.css
+- assets/snippets/performers/show-entire-performer-image.css
+- assets/snippets/performers/move-tag-field-to-top.css
+- assets/snippets/images/disable-lightbox-annimation.css
+- assets/snippets/images/dont-crop-preview-thumbnails.css
+- assets/snippets/global/sticky-tool-bar.css
+- assets/snippets/global/unblur-nsfw-images-on-mouse-hover.css
+- assets/snippets/global/hide-donate-button.css
+- assets/snippets/global/hide-o-count-badges.css
+- assets/snippets/global/blur-nsfw-images.css
+- assets/snippets/scenes/hide-studio-logo.css
+- assets/snippets/scenes/adjust-mouse-wall-mode.css
+- assets/snippets/scenes/hide-truncated-text.css
+- assets/snippets/scenes/swap-studio-res-duration.css
+- assets/snippets/scenes/tags-list-sess-width.css
+- assets/snippets/scenes/hide-scene-specs.css
+- assets/snippets/scenes/disable-zoom-wall-mode.css
+- assets/snippets/scenes/hide-scene-Scrubber.css
+- assets/snippets/scenes/show-extra-info.css
+- assets/snippets/scenes/longer-string-studio.css
+- assets/snippets/tags/hide-tag-images.css
+- assets/snippets/tags/different-tag-cards.css
+- assets/snippets/tags/alternative-tag-layout.css
+- assets/snippets/tags/sub-tag-exolorer.css
+- assets/snippets/galleries/galleries-grid-view.css
+- themeSwtichDefault.css
+- themeSwitchMain.js
+- themeSwitchCSS.js

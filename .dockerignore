@@ -7,8 +7,8 @@ __pycache__/
 *.md
 docs/
 scripts/
-config/prowlarr/logs/
-config/whisparr/logs/
-config/stash/logs/
+config/
+stash/
 data/
 torrents/
+README.md

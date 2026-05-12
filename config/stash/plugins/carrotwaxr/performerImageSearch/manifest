@@ -1,0 +1,16 @@
+id: performerImageSearch
+name: Performer Image Search
+metadata:
+  description: Search multiple sources for performer images. Supports mainstream,
+    JAV, male, and trans performers with configurable sources.
+version: 1.2.2-35e304f
+date: "2025-12-05 08:36:02"
+requires: []
+source_repository: https://carrotwaxr.github.io/stash-plugins/stable/index.yml
+files:
+- performerImageSearch.yml
+- performer-image-search.js
+- performer-image-search.css
+- log.py
+- test_image_search.py
+- image_search.py

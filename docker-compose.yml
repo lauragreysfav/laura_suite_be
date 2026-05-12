@@ -1,9 +1,56 @@
 services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: laura-postgres
+    environment:
+      POSTGRES_DB: laura
+      POSTGRES_USER: laura
+      POSTGRES_PASSWORD: L4oA1UqJs3HeQIan2pGOYMWD
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - 127.0.0.1:5432:5432
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U laura -d laura"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    container_name: laura-redis
+    ports:
+      - 127.0.0.1:6379:6379
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    volumes:
+      - redis_data:/data
+
+  gluetun:
+    image: qmcgaw/gluetun:latest
+    container_name: gluetun
+    cap_add:
+      - NET_ADMIN
+    environment:
+      - VPN_SERVICE_PROVIDER=protonvpn
+      - OPENVPN_USER=OJIj0GKPTvxyZeZn
+      - OPENVPN_PASSWORD=j9oi12t9Ahj3qG15rSsgqLqZAk5cNuXh
+      - SERVER_COUNTRIES=Netherlands
+      - FREE_ONLY=on
+      - TZ=Asia/Kolkata
+    ports:
+      - 127.0.0.1:8191:8191
+    restart: unless-stopped
+
   flaresolverr:
     image: ghcr.io/flaresolverr/flaresolverr:latest
     container_name: flaresolverr
-    ports:
-      - 127.0.0.1:8191:8191
+    network_mode: "service:gluetun"
     environment:
       - LOG_LEVEL=info
       - TZ=Asia/Kolkata
@@ -75,16 +122,91 @@ services:
       - D:\LauraMedia:/data/lauramedia
 
   laura-backend:
-    build: 
-      context: ./backend
+    build:
+      context: .
       dockerfile: Dockerfile
     container_name: laura-backend
     env_file:
-      - ./backend/.env
+      - ./.env
     volumes:
       - ./data:/data
     ports:
       - 127.0.0.1:8000:8000
     depends_on:
-      - stash
+      stash:
+        condition: service_started
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
     restart: unless-stopped
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  laura-worker:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: laura-worker
+    command: celery -A app.celery_app worker --loglevel=info --concurrency=4 -E
+    env_file:
+      - ./.env
+    volumes:
+      - ./data:/data
+    depends_on:
+      redis:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+    restart: unless-stopped
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  laura-beat:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: laura-beat
+    command: celery -A app.celery_app beat --loglevel=info --scheduler celery.beat.PersistentScheduler
+    env_file:
+      - ./.env
+    volumes:
+      - ./data:/data
+    depends_on:
+      redis:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+    restart: unless-stopped
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  flower:
+    image: mher/flower:latest
+    container_name: laura-flower
+    command: celery --broker=redis://redis:6379/0 flower --port=5555
+    ports:
+      - 127.0.0.1:5555:5555
+    depends_on:
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+  redis_data:
+
+
+
+
+
+

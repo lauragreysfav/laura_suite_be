@@ -1,0 +1,12 @@
+id: overlay-info
+name: overlay-info
+metadata:
+  description: Adds more information to scene card overlay
+version: 0.2.3-5c0d2f4
+date: "2026-04-19 04:26:56"
+requires: []
+source_repository: https://feederbox826.github.io/plugins/main/index.yml
+files:
+- overlay-info.js
+- overlay-info.css
+- overlay-info.yml

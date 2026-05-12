@@ -1,0 +1,3 @@
+Alembic migrations for Laura Suite
+
+Use `python manage.py <command>` to run migrations.

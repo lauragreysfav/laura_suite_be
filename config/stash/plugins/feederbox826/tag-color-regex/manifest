@@ -1,0 +1,13 @@
+id: tag-color-regex
+name: tag-color-regex
+metadata:
+  description: Colors tags based on regex
+version: 0.0.1-2be7028
+date: "2025-08-31 13:15:46"
+requires: []
+source_repository: https://feederbox826.github.io/plugins/main/index.yml
+files:
+- README.md
+- assets/configure.html
+- tag-color-regex.js
+- tag-color-regex.yml

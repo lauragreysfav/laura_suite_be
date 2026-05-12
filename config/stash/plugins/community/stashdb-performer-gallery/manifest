@@ -1,0 +1,17 @@
+id: stashdb-performer-gallery
+name: stashdb performer gallery
+metadata:
+  description: Automatically download performer images from stashdb or other stash-boxes.
+    Add the [Stashbox Performer Gallery] tag to a performer and it will create a gallery
+    of images from that stash-box database. Apply the tag [Set Profile Image] to an
+    image to set it as the profile image of that performer. Note you will need to
+    configure the download path and add this as a path under settings > library
+version: 0.3-6416844
+date: "2026-02-04 20:23:29"
+requires: []
+source_repository: https://stashapp.github.io/CommunityScripts/stable/index.yml
+files:
+- stashdb-performer-gallery.py
+- stashdb-performer-gallery.yml
+- README.md
+- requirements.txt

@@ -1,0 +1,12 @@
+id: stashdb-fullimg
+name: stashdb-fullimg
+metadata:
+  description: Download full-size images from StashDB
+version: 0.1.2-711e272
+date: "2024-10-31 05:23:10"
+requires: []
+source_repository: https://feederbox826.github.io/plugins/main/index.yml
+files:
+- README.md
+- stashdb-fullimg.yml
+- stashdb-fullimg.js

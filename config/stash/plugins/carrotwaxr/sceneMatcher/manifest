@@ -1,0 +1,19 @@
+id: sceneMatcher
+name: Scene Matcher
+metadata:
+  description: Find StashDB matches for untagged scenes using known performer and
+    studio associations. Adds a "Match" button to the Tagger UI that searches by linked
+    attributes.
+version: 1.1.0-1b2c5dd
+date: "2025-12-28 02:40:29"
+requires: []
+source_repository: https://carrotwaxr.github.io/stash-plugins/stable/index.yml
+files:
+- tests/test_unit.py
+- scene-matcher.css
+- scene_matcher.py
+- README.md
+- scene-matcher.js
+- log.py
+- stashbox_api.py
+- sceneMatcher.yml

@@ -18,4 +18,4 @@ for i in $(seq 1 15); do
   sleep 1
 done
 
-exec /usr/local/bin/original-entrypoint.sh "$@"
+exec stash "$@"

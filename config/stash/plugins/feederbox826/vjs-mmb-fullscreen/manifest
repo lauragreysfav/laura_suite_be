@@ -1,0 +1,12 @@
+id: vjs-mmb-fullscreen
+name: vjs-mmb-fullscreen
+metadata:
+  description: VideoJS middle mouse button fullscreen
+version: 0.2-fa3d699
+date: "2024-12-03 10:20:06"
+requires: []
+source_repository: https://feederbox826.github.io/plugins/main/index.yml
+files:
+- README.md
+- vjs-mmb-fullscreen.js
+- vjs-mmb-fullscreen.yml

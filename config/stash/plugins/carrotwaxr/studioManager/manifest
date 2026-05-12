@@ -1,0 +1,14 @@
+id: studioManager
+name: Studio Manager
+metadata:
+  description: Manage studio hierarchy with visual tree editing. View and edit parent-child
+    studio relationships.
+version: 0.1.0-cf2b166
+date: "2026-01-23 22:53:34"
+requires: []
+source_repository: https://carrotwaxr.github.io/stash-plugins/stable/index.yml
+files:
+- studio-manager.css
+- README.md
+- studio-manager.js
+- studioManager.yml

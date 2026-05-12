@@ -1,0 +1,12 @@
+id: performer-age
+name: performer-age
+metadata:
+  description: Tag performers with age tags
+version: 0.2-2fbb83e
+date: "2025-08-22 07:29:34"
+requires: []
+source_repository: https://feederbox826.github.io/plugins/main/index.yml
+files:
+- README.md
+- performer-age.yml
+- performer-age.py

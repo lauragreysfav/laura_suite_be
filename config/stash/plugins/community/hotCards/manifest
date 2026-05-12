@@ -1,0 +1,23 @@
+id: hotCards
+name: Hot Cards
+metadata:
+  description: Adds custom styling to card elements that match a Tag ID or a Rating
+    Threshold.
+version: 1.2.2-43feb59
+date: "2025-12-20 01:59:59"
+requires: []
+source_repository: https://stashapp.github.io/CommunityScripts/stable/index.yml
+files:
+- hotCards.yml
+- hotCards.css
+- README.md
+- assets/illusion.webp
+- assets/holo.png
+- assets/hot.png
+- assets/default.png
+- assets/gold.png
+- utils/fetchInterceptor.js
+- utils/helpers.js
+- utils/configurationHandler.js
+- utils/stashHandler.js
+- hotCards.js

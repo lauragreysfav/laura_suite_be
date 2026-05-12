@@ -1,0 +1,12 @@
+id: extraPerformerInfo
+name: Extra Performer Info
+metadata:
+  description: add award info from wikidata
+version: 0.3-73e1efe
+date: "2026-04-10 15:43:33"
+requires: []
+source_repository: https://stashapp.github.io/CommunityScripts/stable/index.yml
+files:
+- extraPerformerInfo.py
+- extraPerformerInfo.yml
+- README.md

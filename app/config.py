@@ -25,6 +25,25 @@ class Settings(BaseSettings):
     log_level: str = "INFO"
     secret_key: str = "change-me"
 
+    db_host: str = "postgres"
+    db_port: int = 5432
+    db_name: str = "laura"
+    db_user: str = "laura"
+    db_password: str = ""
+
+    proton_vpn_user: str = ""
+    proton_vpn_password: str = ""
+
+    smtp_host: str = "smtp.gmail.com"
+    smtp_port: int = 587
+    smtp_user: str = ""
+    smtp_password: str = ""
+    smtp_from: str = ""
+
+    celery_broker_url: str = "redis://redis:6379/0"
+    celery_result_backend: str = "redis://redis:6379/0"
+    cors_origins: str = "http://localhost:5173,http://127.0.0.1:5173"
+
     model_config = {"env_file": str(Path(__file__).parent.parent / ".env")}
 
 

@@ -1,0 +1,12 @@
+id: autovr
+name: autovr
+metadata:
+  description: automatically toggle VR mode
+version: 0.1-5bc28c0
+date: "2024-12-03 10:52:31"
+requires: []
+source_repository: https://feederbox826.github.io/plugins/main/index.yml
+files:
+- README.md
+- autovr.js
+- autovr.yml

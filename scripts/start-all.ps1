@@ -1,7 +1,0 @@
-Write-Host "Starting Laura Suite..."
-& "$PSScriptRoot\start-backend.ps1"
-& "$PSScriptRoot\start-frontend.ps1"
-Write-Host ""
-Write-Host "  Backend:  http://localhost:8000"
-Write-Host "  Frontend: http://localhost:5173"
-Write-Host "  API docs: http://localhost:8000/docs"

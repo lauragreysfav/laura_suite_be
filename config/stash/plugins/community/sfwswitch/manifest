@@ -1,0 +1,14 @@
+id: sfwswitch
+name: SFW Switch
+metadata:
+  description: Add a button to blur covers and images.
+version: 1.8-44e631f
+date: "2026-05-07 19:59:49"
+requires: []
+source_repository: https://stashapp.github.io/CommunityScripts/stable/index.yml
+files:
+- sfwswitch.yml
+- sfw.css
+- README.md
+- sfw.js
+- additional_plugins.css

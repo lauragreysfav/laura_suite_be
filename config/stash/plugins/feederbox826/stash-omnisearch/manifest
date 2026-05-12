@@ -1,0 +1,13 @@
+id: stash-omnisearch
+name: stash-omnisearch
+metadata:
+  description: search all the things on stash
+version: 0.1.0-5c6686b
+date: "2024-11-04 23:20:31"
+requires: []
+source_repository: https://feederbox826.github.io/plugins/main/index.yml
+files:
+- README.md
+- stash-omnisearch.yml
+- stash-omnisearch.js
+- stash-omnisearch.css

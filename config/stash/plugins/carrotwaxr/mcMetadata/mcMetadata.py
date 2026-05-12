@@ -1,0 +1,222 @@
+"""
+mcMetadata - Stash Plugin for Media Center Metadata Generation
+
+Generates NFO files for Jellyfin/Emby, organizes video files according to
+configurable templates, and exports performer images to media server folders.
+
+Version: 1.4.0
+"""
+
+import json
+import sys
+from stashapi.stashapp import StashInterface
+from utils.logger import init_file_logger, close_file_logger
+import utils.logger as log
+from performer import process_all_performers
+from scene import process_all_scenes, process_scene
+
+# Minimum stashapp-tools version required for schema 72+ compatibility
+MIN_STASHAPP_TOOLS_VERSION = "0.2.59"
+
+
+def _parse_version(version_str):
+    """Parse version string into tuple of integers for comparison."""
+    try:
+        return tuple(int(x) for x in version_str.split('.'))
+    except (ValueError, AttributeError):
+        return (0,)
+
+
+def check_stashapp_tools_version():
+    """Check if stashapp-tools is at minimum required version.
+
+    Older versions have a bug with auto-generated GraphQL fragments that
+    causes "Cannot spread fragment 'Folder' within itself" errors on
+    Stash schema 72+. Version 0.2.59 includes the fix.
+    """
+    try:
+        import importlib.metadata
+        version = importlib.metadata.version("stashapp-tools")
+        if _parse_version(version) < _parse_version(MIN_STASHAPP_TOOLS_VERSION):
+            log.warning(
+                f"stashapp-tools version {version} is outdated. "
+                f"Version {MIN_STASHAPP_TOOLS_VERSION}+ is required for Stash schema 72+. "
+                f"Run: pip install --upgrade stashapp-tools"
+            )
+            return False
+        log.debug(f"stashapp-tools version: {version}")
+        return True
+    except importlib.metadata.PackageNotFoundError:
+        log.debug("stashapp-tools package not found, skipping version check")
+        return True
+    except Exception as e:
+        log.debug(f"Could not check stashapp-tools version: {e}")
+        return True
+
+# Parse JSON context passed from Stash
+json_input = json.loads(sys.stdin.read())
+
+# Initialize Stash API
+stash = StashInterface(json_input["server_connection"])
+
+# Plugin configuration
+PLUGIN_ARGS = json_input.get("args", {})
+PLUGIN_ID = "mcMetadata"
+
+
+def get_settings(stash_instance):
+    """Load settings from Stash's plugin configuration.
+
+    Stash stores plugin settings in its database and provides them
+    via the configuration endpoint. This replaces the old ini file approach.
+
+    Returns:
+        dict: Settings dictionary with snake_case keys for internal use
+    """
+    try:
+        config = stash_instance.get_configuration()
+        plugin_config = config.get("plugins", {}).get(PLUGIN_ID, {})
+    except Exception as err:
+        log.error(f"Failed to get plugin configuration: {err}")
+        plugin_config = {}
+
+    # Map from Stash camelCase settings to internal snake_case
+    # with sensible defaults
+    return {
+        "dry_run": plugin_config.get("dryRun", True),  # Default to safe mode
+        "log_file_path": plugin_config.get("logFilePath", ""),  # Optional file logging
+        "enable_hook": plugin_config.get("enableHook", False),  # Default off for safety
+        "require_stash_id": plugin_config.get("requireStashId", False),  # Default off - process all scenes
+        "hook_trigger_mode": plugin_config.get("hookTriggerMode", "always"),
+        "enable_renamer": plugin_config.get("enableRenamer", False),
+        "renamer_path": plugin_config.get("renamerPath", ""),
+        "renamer_path_template": plugin_config.get(
+            "renamerPathTemplate",
+            "$Studio/$Title - $Performers $ReleaseDate [$Resolution]"
+        ),
+        "renamer_filepath_budget": plugin_config.get("renamerFilepathBudget", 250),
+        "renamer_ignore_files_in_path": plugin_config.get("renamerIgnoreFilesInPath", False),
+        "renamer_enable_mark_organized": plugin_config.get("renamerMarkOrganized", True),
+        "renamer_multi_file_mode": plugin_config.get("renamerMultiFileMode", "all"),
+        "nfo_skip_existing": plugin_config.get("nfoSkipExisting", False),
+        "nfo_exclude_fields": [
+            f.strip().lower()
+            for f in plugin_config.get("nfoExcludeFields", "").split(",")
+            if f.strip()
+        ],
+        "enable_actor_images": plugin_config.get("enableActorImages", False),
+        "media_server": plugin_config.get("mediaServer", "jellyfin"),
+        "actor_metadata_path": plugin_config.get("actorMetadataPath", ""),
+    }
+
+
+# Load settings from Stash
+SETTINGS = get_settings(stash)
+
+
+def get_plugin_mode():
+    """Determine the plugin execution mode from args.
+
+    Returns:
+        str: The mode string (e.g., 'bulk', 'performers', 'Scene.Update.Post')
+
+    Raises:
+        ValueError: If no valid mode or hook context is provided
+    """
+    mode = PLUGIN_ARGS.get("mode")
+    hook_context = PLUGIN_ARGS.get("hookContext")
+
+    if mode is None and hook_context is None:
+        raise ValueError("Invalid plugin args: no mode or hookContext provided")
+
+    return mode or hook_context["type"]
+
+
+def main():
+    """Main entry point for the plugin."""
+    try:
+        mode = get_plugin_mode()
+
+        # Initialize file logging if configured
+        if SETTINGS.get("log_file_path"):
+            init_file_logger(SETTINGS["log_file_path"])
+
+        # Check stashapp-tools version for schema compatibility
+        check_stashapp_tools_version()
+
+        log.debug(f"Plugin mode: {mode}")
+        log.debug(f"Dry run: {SETTINGS['dry_run']}")
+
+        # Log current settings for debugging
+        if SETTINGS["dry_run"]:
+            log.info("[DRY RUN] Mode enabled - no changes will be made")
+
+        # Get API key for modes that need it
+        try:
+            stash_config = stash.get_configuration()["general"]
+            api_key = stash_config.get("apiKey", "")
+        except Exception as err:
+            log.error(f"Failed to get Stash configuration: {err}")
+            sys.exit(1)
+
+        # Handle processing modes
+        if mode == "bulk":
+            log.info("Starting bulk scene update")
+            process_all_scenes(stash, SETTINGS, api_key)
+            log.info("Bulk scene update completed")
+
+        elif mode == "performers":
+            log.info("Starting bulk performer update")
+            process_all_performers(stash, SETTINGS, api_key)
+            log.info("Bulk performer update completed")
+
+        elif mode == "Scene.Update.Post":
+            if not SETTINGS.get("enable_hook", False):
+                log.debug("Hook disabled, skipping")
+                return
+
+            scene_id = PLUGIN_ARGS["hookContext"]["id"]
+            scene = stash.find_scene(scene_id)
+
+            if not scene:
+                log.warning(f"Scene {scene_id} not found")
+                return
+
+            # Check if we require StashDB link (configurable, default OFF)
+            require_stash_id = SETTINGS.get("require_stash_id", False)
+            stash_ids = scene.get("stash_ids", [])
+
+            if require_stash_id and not stash_ids:
+                log.debug(f"Scene {scene_id} has no StashID, skipping (requireStashId is enabled)")
+                return
+
+            # Check hook trigger mode (#111)
+            hook_trigger_mode = SETTINGS.get("hook_trigger_mode", "always")
+            if hook_trigger_mode == "on_organized" and not scene.get("organized", False):
+                log.debug(f"Scene {scene_id} not organized, skipping (hookTriggerMode=on_organized)")
+                return
+
+            # Cascade protection: skip already-organized scenes to prevent re-firing
+            # after the plugin marks a scene as organized during rename.
+            # Skip this check in on_organized mode — user explicitly wants organized triggers.
+            if hook_trigger_mode != "on_organized":
+                if SETTINGS.get("renamer_enable_mark_organized", False) and scene.get("organized", False):
+                    log.debug(f"Scene {scene_id} already organized, skipping to prevent hook cascade")
+                    return
+
+            log.info(f"Processing scene {scene_id}")
+            process_scene(scene, stash, SETTINGS, api_key)
+
+        else:
+            log.warning(f"Unknown mode: {mode}")
+
+    except Exception as err:
+        log.error(f"Plugin error: {err}")
+        sys.exit(1)
+    finally:
+        # Always close file logger to ensure log is written
+        close_file_logger()
+
+
+if __name__ == "__main__":
+    main()

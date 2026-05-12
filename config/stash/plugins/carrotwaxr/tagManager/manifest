@@ -1,0 +1,43 @@
+id: tagManager
+name: Tag Manager
+metadata:
+  description: Match and sync local tags with stash-box endpoints. Features multi-endpoint
+    support, tag caching, layered search (exact, fuzzy, synonym), and field-by-field
+    merge dialog.
+version: 0.4.0-0141e9f
+date: "2026-02-19 23:20:49"
+requires: []
+source_repository: https://carrotwaxr.github.io/stash-plugins/stable/index.yml
+files:
+- synonyms.json
+- blacklist.py
+- tagManager.yml
+- tests/test_hierarchy.js
+- tests/__init__.py
+- tests/test_integration.py
+- tests/test_category_matching.js
+- tests/test_stashdb_scene_sync.py
+- tests/test_matcher.py
+- tests/test_alias_validation.js
+- tests/test_tag_manager.py
+- tests/test_stashdb_api.py
+- tests/test_browse_search.js
+- tests/test_import_parents.js
+- tests/test_blacklist.py
+- tests/test_integration_sync.py
+- tests/test_blacklist.js
+- tests/test_endpoint_matching.js
+- tests/test_tag_cache.py
+- tests/test_category_persistence.js
+- tests/test_scene_sync_blacklist.py
+- tag-manager.js
+- stashdb_api.py
+- USERGUIDE.md
+- README.md
+- log.py
+- stashdb_scene_sync.py
+- tag_manager.py
+- requirements.txt
+- tag_cache.py
+- tag-manager.css
+- matcher.py

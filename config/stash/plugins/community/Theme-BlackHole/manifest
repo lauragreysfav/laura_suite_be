@@ -1,0 +1,12 @@
+id: Theme-BlackHole
+name: Theme - BlackHole
+metadata:
+  description: BlackHole Theme for Stash by BViking78
+version: 2.0.0-43feb59
+date: "2025-12-20 01:59:59"
+requires: []
+source_repository: https://stashapp.github.io/CommunityScripts/stable/index.yml
+files:
+- README.md
+- Theme-BlackHole.yml
+- Theme-BlackHole.css

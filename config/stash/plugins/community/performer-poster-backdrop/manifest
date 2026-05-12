@@ -1,0 +1,14 @@
+id: performer-poster-backdrop
+name: Performer Poster Backdrop
+metadata:
+  description: Adds a blurred poster backdrop to performer pages.
+version: 1.1.0-589983b
+date: "2026-04-16 15:06:31"
+requires: []
+source_repository: https://stashapp.github.io/CommunityScripts/stable/index.yml
+files:
+- performer-poster-backdrop.css
+- README.md
+- assets/performer-poster-backdrop-example.png
+- performer-poster-backdrop.js
+- performer-poster-backdrop.yml

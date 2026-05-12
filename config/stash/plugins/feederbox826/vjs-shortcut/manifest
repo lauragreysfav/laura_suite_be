@@ -1,0 +1,12 @@
+id: vjs-shortcut
+name: vjs-shortcut
+metadata:
+  description: Add YouTube keyboard shortcuts to VideoJS
+version: 0.3.3-d00eefd
+date: "2026-03-19 00:33:42"
+requires: []
+source_repository: https://feederbox826.github.io/plugins/main/index.yml
+files:
+- README.md
+- vjs-shortcut.js
+- vjs-shortcut.yml

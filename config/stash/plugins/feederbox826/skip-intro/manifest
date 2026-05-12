@@ -1,0 +1,13 @@
+id: skip-intro
+name: skip-intro
+metadata:
+  description: Skips static duration intros
+version: 0.3.1-e4379e1
+date: "2026-03-30 08:19:47"
+requires: []
+source_repository: https://feederbox826.github.io/plugins/main/index.yml
+files:
+- README.md
+- skip-intro-ui.js
+- skip-intro.yml
+- skip-intro.js

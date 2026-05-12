@@ -1,0 +1,34 @@
+name: Scene Matcher
+description: Find StashDB matches for untagged scenes using known performer and studio associations. Adds a "Match" button to the Tagger UI that searches by linked attributes.
+version: 1.1.0
+url: https://github.com/carrotwaxr/stash-plugins
+
+# UI plugin - injects button and modal on Tagger pages
+ui:
+  javascript:
+    - scene-matcher.js
+  css:
+    - scene-matcher.css
+
+# Plugin settings configurable in Stash UI (Settings > Plugins)
+settings:
+  stashBoxEndpoint:
+    displayName: Stash-Box Endpoint
+    description: Which stash-box to query for scene matches. Leave empty to use the first configured endpoint (usually StashDB). Enter the full GraphQL URL (e.g., https://stashdb.org/graphql).
+    type: STRING
+
+  # StashDB API settings (advanced - for rate limiting and error handling)
+  stashbox_request_delay:
+    displayName: Request Delay (seconds)
+    description: Delay between paginated StashDB requests to avoid rate limiting. Default is 0.5 seconds. Increase if you see 429 errors.
+    type: NUMBER
+  stashbox_max_retries:
+    displayName: Max Retries
+    description: Number of times to retry failed StashDB requests (for 504, 503, connection errors). Default is 3.
+    type: NUMBER
+
+# Python backend for StashDB queries (called via runPluginOperation from JS)
+exec:
+  - python
+  - "{pluginDir}/scene_matcher.py"
+interface: raw

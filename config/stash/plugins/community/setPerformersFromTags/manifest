@@ -1,0 +1,12 @@
+id: setPerformersFromTags
+name: Set Performers From Tags
+metadata:
+  description: Automatically sets performers in scenes and images based on tags.
+version: 1.0.0-43feb59
+date: "2025-12-20 01:59:59"
+requires: []
+source_repository: https://stashapp.github.io/CommunityScripts/stable/index.yml
+files:
+- README.md
+- setPerformersFromTags.yml
+- setPerformersFromTags.js

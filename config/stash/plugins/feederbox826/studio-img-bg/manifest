@@ -1,0 +1,13 @@
+id: studio-img-bg
+name: Studio background shadow
+metadata:
+  description: Add drop shadows to studio icons for visibility
+version: 0.2.0-d8dfe6f
+date: "2026-03-21 05:08:02"
+requires: []
+source_repository: https://feederbox826.github.io/plugins/main/index.yml
+files:
+- README.md
+- studio-img-bg.js
+- studio-img-bg.css
+- studio-img-bg.yml

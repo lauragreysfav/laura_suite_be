@@ -1,0 +1,12 @@
+id: tag-filter
+name: tag-filter
+metadata:
+  description: Filter out and hide meta-tags
+version: 0.2.1-a8438e5
+date: "2026-02-03 19:09:58"
+requires: []
+source_repository: https://feederbox826.github.io/plugins/main/index.yml
+files:
+- README.md
+- tag-filter.yml
+- tag-filter.js

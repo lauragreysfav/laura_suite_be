@@ -1,0 +1,25 @@
+id: missingScenes
+name: Missing Scenes
+metadata:
+  description: Discover scenes from StashDB that you don't have locally. View missing
+    scenes for performers and studios, with optional Whisparr integration for automated
+    downloading and cleanup.
+version: 1.4.0-aacc6ed
+date: "2026-04-04 06:07:29"
+requires: []
+source_repository: https://carrotwaxr.github.io/stash-plugins/stable/index.yml
+files:
+- missing-scenes.js
+- missing-scenes-core.js
+- test_integration.py
+- missing_scenes.py
+- test_missing_scenes.py
+- theporndb_api.py
+- README.md
+- .env.example
+- log.py
+- missing-scenes.css
+- stashbox_api.py
+- test_whisparr_status.py
+- missing-scenes-browse.js
+- missingScenes.yml

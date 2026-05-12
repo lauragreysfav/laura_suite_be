@@ -1,0 +1,32 @@
+id: mcMetadata
+name: mcMetadata
+metadata:
+  description: Generates NFO metadata files for Jellyfin/Emby/Plex, organizes/renames
+    video files using customizable templates, and exports performer images to media
+    server folders.
+version: 1.4.0-c36dc07
+date: "2026-03-10 21:11:18"
+requires: []
+source_repository: https://carrotwaxr.github.io/stash-plugins/stable/index.yml
+files:
+- performer.py
+- tests/test_unit.py
+- tests/manual_test.py
+- tests/test_integration.py
+- tests/test.py
+- LICENSE
+- scene.py
+- .coverage
+- README.md
+- mcMetadata.py
+- utils/nfo.py
+- utils/files.py
+- utils/logger.py
+- utils/settings.py
+- utils/replacer.py
+- samples/jellyfin.nfo
+- samples/emby.nfo
+- samples/generated.nfo
+- samples/kodi_spec.nfo
+- mcMetadata.yml
+- requirements.txt

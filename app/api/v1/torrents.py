@@ -1,9 +1,13 @@
-from fastapi import APIRouter, HTTPException, Request
+from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import BaseModel
 from app.services import torbox
 from app.auth.dependencies import get_current_user
 
 router = APIRouter(prefix="/torrents", tags=["torrents"])
+
+
+class PauseResumeRequest(BaseModel):
+    operation: str
 
 
 class AddMagnetRequest(BaseModel):
@@ -24,6 +28,24 @@ def get_torrents(bypass_cache: bool = False):
 def add_torrent(body: AddMagnetRequest):
     try:
         data = torbox.create_torrent(body.magnet, body.seed)
+        return data
+    except Exception as e:
+        raise HTTPException(status_code=502, detail=str(e))
+
+
+@router.patch("/{torrent_id}")
+def control_torrent(torrent_id: str, body: PauseResumeRequest):
+    try:
+        data = torbox.control_torrent(torrent_id, body.operation)
+        return data
+    except Exception as e:
+        raise HTTPException(status_code=502, detail=str(e))
+
+
+@router.get("/queue")
+def get_queue():
+    try:
+        data = torbox.list_torrents(bypass_cache=False)
         return data
     except Exception as e:
         raise HTTPException(status_code=502, detail=str(e))

@@ -1,0 +1,13 @@
+id: date_parser
+name: Gallery Date Parser
+metadata:
+  description: Find date in path or filename and add it to the gallery
+version: 1.1.0-43feb59
+date: "2025-12-20 01:59:59"
+requires: []
+source_repository: https://stashapp.github.io/CommunityScripts/stable/index.yml
+files:
+- README.md
+- date_parser.yml
+- date_parser.py
+- requirements.txt

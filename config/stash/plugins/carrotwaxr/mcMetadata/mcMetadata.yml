@@ -1,0 +1,94 @@
+name: mcMetadata
+description: Generates NFO metadata files for Jellyfin/Emby/Plex, organizes/renames video files using customizable templates, and exports performer images to media server folders.
+url: https://github.com/carrotwaxr/stash-plugins/tree/main/plugins/mcMetadata
+version: 1.4.0
+exec:
+  - python
+  - "{pluginDir}/mcMetadata.py"
+interface: raw
+
+# Note: Stash doesn't support YAML defaults. Defaults are handled in Python code.
+settings:
+  dryRun:
+    displayName: Dry Run Mode
+    description: Preview changes without making them. Check logs to see what would happen. Default is ON.
+    type: BOOLEAN
+  logFilePath:
+    displayName: Log File Path
+    description: Path to write detailed log file during dry run. Leave empty to disable file logging. Example /data/mcMetadata.log
+    type: STRING
+  enableHook:
+    displayName: Enable Scene Update Hook
+    description: Process scenes automatically when you update them. Disable to only use bulk tasks. Default is OFF.
+    type: BOOLEAN
+  requireStashId:
+    displayName: Require StashDB Link (Hook Only)
+    description: Only process scenes that are linked to StashDB when using the hook. Enable this to only generate NFOs for curated StashDB content. Default is OFF.
+    type: BOOLEAN
+  hookTriggerMode:
+    displayName: Hook Trigger Mode
+    description: "When to process scenes via hook: 'always' (every save) or 'on_organized' (only when scene is marked Organized). Default is 'always'."
+    type: STRING
+  enableRenamer:
+    displayName: Enable File Renamer
+    description: Move/rename video files based on the path template. Default is OFF.
+    type: BOOLEAN
+  renamerPath:
+    displayName: Renamer Base Path
+    description: Base directory for renamed files (must be in a Stash library)
+    type: STRING
+  renamerPathTemplate:
+    displayName: Renamer Path Template
+    description: "Template for renamed files. Variables: $Studio, $Title, $ReleaseDate, $ReleaseYear, $Performers, $FemalePerformers, $MalePerformers, $Resolution, $Quality, $StashID, $Tags. Default: $Studio/$Title - $Performers $ReleaseDate [$Resolution]"
+    type: STRING
+  renamerFilepathBudget:
+    displayName: Max Filepath Length
+    description: Maximum total path length. Default is 250.
+    type: NUMBER
+  renamerIgnoreFilesInPath:
+    displayName: Skip Files Already in Path
+    description: Don't rename files that are already in the renamer base path. Default is OFF.
+    type: BOOLEAN
+  renamerMarkOrganized:
+    displayName: Mark Scenes as Organized
+    description: Set the Organized flag on scenes after renaming. Default is ON.
+    type: BOOLEAN
+  renamerMultiFileMode:
+    displayName: Multi-File Mode
+    description: "How to handle scenes with multiple files: all (process all), primary_only (first file only), skip (skip multi-file scenes). Default is 'all'."
+    type: STRING
+  nfoSkipExisting:
+    displayName: Skip Existing NFO Files
+    description: Don't overwrite NFO files that already exist. Default is OFF.
+    type: BOOLEAN
+  nfoExcludeFields:
+    displayName: NFO Exclude Fields
+    description: "Comma-separated list of NFO fields to omit. Available: name, title, originaltitle, sorttitle, criticrating, rating, userrating, plot, premiered, releasedate, year, studio, uniqueid, genre. Leave empty to include all fields."
+    type: STRING
+  enableActorImages:
+    displayName: Enable Actor Images
+    description: Copy performer images to media server metadata folder. Default is OFF.
+    type: BOOLEAN
+  mediaServer:
+    displayName: Media Server Type
+    description: "Target media server: jellyfin, emby, or plex. Default is 'jellyfin'. Note: Plex does not support external performer images."
+    type: STRING
+  actorMetadataPath:
+    displayName: Actor Metadata Path
+    description: Path to media server's People metadata folder (e.g., /config/data/metadata/People/)
+    type: STRING
+
+hooks:
+  - name: hook_mcmetadata
+    description: Organize/rename video files and create/update NFO metadata when you update a scene.
+    triggeredBy:
+      - Scene.Update.Post
+tasks:
+  - name: "Bulk Update Scenes"
+    description: Process all scenes - rename files, generate NFOs, and copy performer images
+    defaultArgs:
+      mode: bulk
+  - name: "Bulk Update Performers"
+    description: Copy all performer images to media server's People folder
+    defaultArgs:
+      mode: performers
