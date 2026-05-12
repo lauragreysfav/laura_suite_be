@@ -26,24 +26,8 @@ Thumbs.db
 
 # Docker
 config/prowlarr/logs/
-config/prowlarr/*.db
-config/prowlarr/*.db-shm
-config/prowlarr/*.db-wal
-config/prowlarr/*.pid
 config/whisparr/logs/
-config/whisparr/*.db
-config/whisparr/*.db-shm
-config/whisparr/*.db-wal
-config/whisparr/*.pid
 config/stash/logs/
-
-# Stash runtime artifacts (regeneratable)
-config/stash/blobs/
-config/stash/*.sqlite
-config/stash/*.sqlite-shm
-config/stash/*.sqlite-wal
-config/stash/generated/
-stash/generated/
 
 # Runtime data
 data/
