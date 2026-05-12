@@ -1,9 +1,9 @@
-from fastapi import APIRouter, HTTPException, Query, Depends
+from fastapi import APIRouter, HTTPException, Query, Depends, Body
 from sqlalchemy.orm import Session
 from app.services import stash, torbox, prowlarr, stashdb_public
 from app.database import get_db
-from app.models import LibraryTorrent, LibraryAction
-from typing import Optional
+from app.models import LibraryTorrent, LibraryAction, LibraryBulkJob
+from typing import Optional, List
 from datetime import datetime
 
 router = APIRouter(prefix="/library", tags=["library"])
@@ -87,6 +87,79 @@ def manual_add(info_hash: str, magnet: str, title: str, db: Session = Depends(ge
     except Exception as e:
         db.rollback()
         raise HTTPException(status_code=502, detail=str(e))
+
+
+@router.post("/get-the-past")
+def trigger_get_the_past(query: str = Body(..., embed=True), tag: Optional[str] = Body(None, embed=True), db: Session = Depends(get_db)):
+    try:
+        from app.tasks.library_tasks import get_the_past
+        job = LibraryBulkJob(
+            performer_or_studio=query,
+            query_type="performer",
+            status="running"
+        )
+        db.add(job)
+        db.commit()
+        db.refresh(job)
+        
+        get_the_past.delay(job.id, query, tag)
+        return {"status": "started", "job_id": job.id}
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=502, detail=str(e))
+
+
+@router.post("/get-the-past/megapack")
+def trigger_megapack_search(query: str = Body(..., embed=True), tag: Optional[str] = Body(None, embed=True), db: Session = Depends(get_db)):
+    try:
+        from app.tasks.library_tasks import search_megapacks
+        job = LibraryBulkJob(
+            performer_or_studio=query,
+            query_type="megapack",
+            status="running"
+        )
+        db.add(job)
+        db.commit()
+        db.refresh(job)
+        
+        search_megapacks.delay(job.id, query, tag)
+        return {"status": "started", "job_id": job.id}
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=502, detail=str(e))
+
+
+@router.get("/bulk-jobs/{job_id}")
+def get_bulk_job_status(job_id: int, db: Session = Depends(get_db)):
+    job = db.query(LibraryBulkJob).filter(LibraryBulkJob.id == job_id).first()
+    if not job:
+        raise HTTPException(status_code=404, detail="Job not found")
+    
+    # Return results if completed
+    results = []
+    if job.status == "completed":
+        results = db.query(LibraryTorrent).filter(
+            LibraryTorrent.title.ilike(f"%{job.performer_or_studio}%")
+        ).all()
+        # Transform for frontend
+        results = [{
+            "infoHash": t.info_hash,
+            "title": t.title,
+            "size": int(t.size) if t.size and t.size.isdigit() else 0,
+            "seeders": t.seeders,
+            "indexer": t.source,
+            "is_megapack": t.is_megapack,
+            "is_local": t.is_local_stash,
+            "local_path": t.local_stash_path,
+            "magnetUrl": t.magnet
+        } for t in results]
+
+    return {
+        "status": job.status,
+        "total_found": job.total_found,
+        "results": results,
+        "error": job.error
+    }
 
 
 @router.post("/scan")
