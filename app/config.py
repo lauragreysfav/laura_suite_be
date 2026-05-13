@@ -19,7 +19,7 @@ class Settings(BaseSettings):
     whisparr_url: str = "http://whisparr:6969"
     whisparr_api_key: str = ""
 
-    prowlarr_url: str = "http://prowlarr:9696"
+    prowlarr_url: str = "http://gluetun:9696"
     prowlarr_api_key: str = ""
 
     database_path: str = "/data/laura.db"
