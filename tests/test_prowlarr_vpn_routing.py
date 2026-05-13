@@ -17,7 +17,8 @@ def _service_block(compose: str, service_name: str) -> str:
 class TestProwlarrVpnRouting(unittest.TestCase):
     def test_gluetun_publishes_prowlarr_port(self):
         compose = (ROOT / "docker-compose.yml").read_text(encoding="utf-8")
-        self.assertIn("- 127.0.0.1:9696:9696", compose)
+        gluetun_block = _service_block(compose, "gluetun")
+        self.assertIn("- 127.0.0.1:9696:9696", gluetun_block)
 
     def test_prowlarr_uses_gluetun_network_namespace(self):
         compose = (ROOT / "docker-compose.yml").read_text(encoding="utf-8")
