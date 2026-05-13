@@ -40,7 +40,7 @@ services:
       - VPN_SERVICE_PROVIDER=protonvpn
       - OPENVPN_USER=OJIj0GKPTvxyZeZn
       - OPENVPN_PASSWORD=j9oi12t9Ahj3qG15rSsgqLqZAk5cNuXh
-      - SERVER_COUNTRIES=Netherlands
+      - SERVER_COUNTRIES=Japan
       - FREE_ONLY=on
       - TZ=Asia/Kolkata
       - FIREWALL_OUTBOUND_SUBNETS=192.168.65.0/24
@@ -73,6 +73,12 @@ services:
         condition: service_started
     restart: unless-stopped
 
+  torproxy:
+    image: peterdavehello/tor-socks-proxy:latest
+    container_name: torproxy
+    network_mode: "service:gluetun"
+    restart: unless-stopped
+
   whisparr:
     image: ghcr.io/hotio/whisparr:latest
     container_name: whisparr
@@ -83,7 +89,7 @@ services:
     volumes:
       - ./config/whisparr:/config
       - ./torrents:/torrents
-      - D:\LauraMedia:/data/lauramedia
+      - "D:/LauraMedia:/media"
     ports:
       - 6969:6969
     restart: unless-stopped
@@ -123,7 +129,7 @@ services:
       - ./stash/metadata:/metadata
       - ./stash/cache:/cache
       - ./stash/generated:/generated
-      - D:\LauraMedia:/data/lauramedia
+      - "D:/LauraMedia:/media"
 
   laura-backend:
     build:
