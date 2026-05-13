@@ -45,6 +45,7 @@ services:
       - TZ=Asia/Kolkata
     ports:
       - 127.0.0.1:8191:8191
+      - 127.0.0.1:9696:9696
     restart: unless-stopped
 
   flaresolverr:
@@ -59,14 +60,16 @@ services:
   prowlarr:
     image: ghcr.io/hotio/prowlarr:latest
     container_name: prowlarr
+    network_mode: "service:gluetun"
     environment:
       - APP_UID=1000
       - APP_GID=1000
       - TZ=Asia/Kolkata
     volumes:
       - ./config/prowlarr:/config
-    ports:
-      - 127.0.0.1:9696:9696
+    depends_on:
+      gluetun:
+        condition: service_started
     restart: unless-stopped
 
   whisparr:
