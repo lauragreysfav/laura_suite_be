@@ -43,6 +43,7 @@ services:
       - SERVER_COUNTRIES=Netherlands
       - FREE_ONLY=on
       - TZ=Asia/Kolkata
+      - FIREWALL_OUTBOUND_SUBNETS=192.168.65.0/24
     ports:
       - 127.0.0.1:8191:8191
       - 9696:9696
@@ -84,7 +85,7 @@ services:
       - ./torrents:/torrents
       - D:\LauraMedia:/data/lauramedia
     ports:
-      - 127.0.0.1:6969:6969
+      - 6969:6969
     restart: unless-stopped
 
   stash:
