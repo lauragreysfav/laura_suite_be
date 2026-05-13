@@ -14,4 +14,8 @@
   <SslCertPassword></SslCertPassword>
   <InstanceName>Prowlarr</InstanceName>
   <UpdateMechanism>Docker</UpdateMechanism>
+  <UpdateMechanism>Docker</UpdateMechanism>
+  <UpdateMechanism>Docker</UpdateMechanism>
+  <UpdateMechanism>Docker</UpdateMechanism>
+  <UpdateMechanism>Docker</UpdateMechanism>
 </Config>

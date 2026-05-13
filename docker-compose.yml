@@ -45,7 +45,7 @@ services:
       - TZ=Asia/Kolkata
     ports:
       - 127.0.0.1:8191:8191
-      - 127.0.0.1:9696:9696
+      - 9696:9696
     restart: unless-stopped
 
   flaresolverr:
