@@ -5,7 +5,7 @@
   <UrlBase></UrlBase>
   <LaunchBrowser>True</LaunchBrowser>
   <Branch>master</Branch>
-  <AuthenticationMethod>None</AuthenticationMethod>
+  <AuthenticationMethod>Forms</AuthenticationMethod>
   <ApiKey>fdd5c4ef67e74e12b5e6c81f2c354527</ApiKey>
   <AuthenticationRequired>Enabled</AuthenticationRequired>
   <BindAddress>*</BindAddress>

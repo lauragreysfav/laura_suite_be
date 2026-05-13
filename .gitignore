@@ -39,14 +39,9 @@ torrents/
 .worktrees/
 
 # Runtime artifacts
-config/prowlarr/*.db*
-config/prowlarr/*.pid
 config/stash/blobs/
 config/stash/cache/
 config/stash/generated/
-config/stash/stash-go.sqlite*
-config/whisparr/*.db*
-config/whisparr/*.pid
 stash/cache/
 stash/generated/
 stash/metadata/
