@@ -89,7 +89,7 @@ services:
     volumes:
       - ./config/whisparr:/config
       - ./torrents:/torrents
-      - "D:/LauraMedia:/media"
+      - /mnt/host/d/LauraMedia:/data/lauramedia
     ports:
       - 6969:6969
     restart: unless-stopped
@@ -129,7 +129,7 @@ services:
       - ./stash/metadata:/metadata
       - ./stash/cache:/cache
       - ./stash/generated:/generated
-      - "D:/LauraMedia:/media"
+      - /mnt/host/d/LauraMedia:/data/lauramedia
 
   laura-backend:
     build:
