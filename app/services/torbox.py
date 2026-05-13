@@ -1,5 +1,8 @@
+import logging
 import httpx
 from app.config import settings
+
+logger = logging.getLogger("laura.services.torbox")
 
 BASE = "https://api.torbox.app/v1/api"
 HEADERS = {"Authorization": f"Bearer {settings.torbox_api_key}"}
@@ -45,8 +48,12 @@ def refresh_webdav() -> bool:
     try:
         auth = (settings.torbox_webdav_user, settings.torbox_webdav_pass)
         r = httpx.get("https://webdav.torbox.app/refresh", auth=auth, timeout=10, follow_redirects=True)
-        return r.status_code == 200
-    except httpx.HTTPError:
+        ok = r.status_code == 200
+        if not ok:
+            logger.warning("webdav_refresh_failed", extra={"status": r.status_code, "url": str(r.url)})
+        return ok
+    except httpx.HTTPError as e:
+        logger.error("webdav_refresh_error", extra={"error": str(e), "error_type": type(e).__name__})
         return False
 
 

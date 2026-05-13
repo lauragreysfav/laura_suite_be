@@ -174,4 +174,7 @@ def scan_library():
 @router.post("/refresh-webdav")
 def refresh_webdav():
     ok = torbox.refresh_webdav()
-    return {"status": "ok" if ok else "unavailable", "detail": "TorBox service may be experiencing an outage" if not ok else None}
+    return {
+        "status": "ok" if ok else "unavailable",
+        "detail": None if ok else "WebDAV refresh failed — check credentials or TorBox service status"
+    }
