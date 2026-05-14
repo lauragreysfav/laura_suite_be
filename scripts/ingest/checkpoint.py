@@ -30,6 +30,7 @@ class Checkpoint:
                 with open(p) as f:
                     raw = json.load(f)
                 self._data = {**DEFAULTS, **raw}
+                self._dirty = False
                 logger.info(
                     "checkpoint_loaded", extra={"phase": self._data.get("phase")}
                 )

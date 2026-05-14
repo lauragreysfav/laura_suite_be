@@ -52,3 +52,13 @@ def me(user: dict = Depends(get_current_user)):
 @router.get("/auth/check")
 def check_access(user: dict = Depends(get_current_user)):
     return {"authenticated": True, "sub": user.get("sub"), "email": user.get("email")}
+
+
+@router.post("/auth/logout")
+def logout(user: dict = Depends(get_current_user)):
+    supabase = get_supabase()
+    try:
+        supabase.auth.sign_out()
+        return {"message": "Logged out successfully"}
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))

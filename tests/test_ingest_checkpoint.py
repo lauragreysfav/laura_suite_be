@@ -12,8 +12,8 @@ def test_checkpoint_save_and_load(tmp_path):
     assert cp2.get("performers_page") == 5
 
 
-def test_checkpoint_defaults():
-    cp = Checkpoint(path="/tmp/nonexistent/ckpt.json")
+def test_checkpoint_defaults(tmp_path):
+    cp = Checkpoint(path=str(tmp_path / "nope.json"))
     cp.load()
     assert cp.get("phase", "performers") == "performers"
     assert cp.get("seen_performer_ids", []) == []

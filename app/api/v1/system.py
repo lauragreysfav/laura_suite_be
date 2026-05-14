@@ -1,11 +1,12 @@
-from fastapi import APIRouter
+from fastapi import APIRouter, Depends
+from app.auth.dependencies import get_current_user
 from app.services import torbox, stash
 
 router = APIRouter(prefix="/system", tags=["system"])
 
 
 @router.get("/status")
-def get_status():
+def get_status(user: dict = Depends(get_current_user)):
     result = {"torbox": {"status": "unknown"}, "stash": {"status": "unknown"}, "webdav": {"status": "unknown"}}
 
     try:
