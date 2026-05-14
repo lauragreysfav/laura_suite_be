@@ -60,6 +60,6 @@ class TypesenseClient:
         if not hashes:
             return []
         qb = query_by or ["title"]
-        params = {"q": "*", "query_by": ",".join(qb), "filter_by": build_hash_filter(hashes), "per_page": len(hashes)}
+        params = {"q": "*", "query_by": ",".join(qb), "filter_by": build_hash_filter(hashes), "per_page": min(len(hashes), 250)}
         resp = self.client.collections[collection].documents.search(params)
         return [h["document"] for h in resp.get("hits", [])]
