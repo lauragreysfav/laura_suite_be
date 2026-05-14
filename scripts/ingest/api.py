@@ -67,12 +67,16 @@ class StashDBClient:
             return r.json()
 
     async def fetch_performers_page(self, name: str, page: int = 1) -> tuple[list[dict], int]:
-        data = await self._query(PERFORMER_QUERY, {
-            "input": {"names": name, "page": page, "per_page": PER_PAGE}
-        })
-        d = data.get("data") or {}
-        qp = d.get("queryPerformers") or {}
-        return qp.get("performers", []), qp.get("count", 0)
+        try:
+            data = await self._query(PERFORMER_QUERY, {
+                "input": {"names": name, "page": page, "per_page": PER_PAGE}
+            })
+            d = data.get("data") or {}
+            qp = d.get("queryPerformers") or {}
+            return qp.get("performers", []), qp.get("count", 0)
+        except Exception as e:
+            logger.warning("performers_fetch_error", extra={"prefix": name, "page": page, "error": str(e)})
+            return [], 0
 
     async def fetch_studio(self, studio_id: str) -> dict | None:
         try:
@@ -83,14 +87,18 @@ class StashDBClient:
             return None
 
     async def fetch_scenes_page(self, studio_id: str, page: int = 1) -> tuple[list[dict], int]:
-        data = await self._query(SCENES_QUERY, {
-            "input": {
-                "studios": {"value": [studio_id], "modifier": "INCLUDES"},
-                "page": page,
-                "per_page": PER_PAGE,
-                "date": {"value": "2000-01-01", "modifier": "GREATER_THAN_OR_EQUALS"},
-            }
-        })
-        d = data.get("data") or {}
-        qs = d.get("queryScenes") or {}
-        return qs.get("scenes", []), qs.get("count", 0)
+        try:
+            data = await self._query(SCENES_QUERY, {
+                "input": {
+                    "studios": {"value": [studio_id], "modifier": "INCLUDES"},
+                    "page": page,
+                    "per_page": PER_PAGE,
+                    "date": {"value": "2000-01-01", "modifier": "GREATER_THAN_OR_EQUALS"},
+                }
+            })
+            d = data.get("data") or {}
+            qs = d.get("queryScenes") or {}
+            return qs.get("scenes", []), qs.get("count", 0)
+        except Exception as e:
+            logger.warning("scenes_fetch_error", extra={"studio": studio_id, "page": page, "error": str(e)})
+            return [], 0

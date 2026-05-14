@@ -68,6 +68,7 @@ _IH_RE = re.compile(r"^[a-fA-F0-9]{40}$")
 def _valid_info_hash(s: str) -> bool:
     return bool(_IH_RE.match(s))
 
+@router.post("/add/batch/v2")
 def add_torrents_batch_v2(body: BatchAddMagnetRequestV2):
     results = []
     for item in body.items:
