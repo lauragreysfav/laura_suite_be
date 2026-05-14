@@ -21,10 +21,4 @@ def get_db():
 
 
 def init_db():
-    import app.models
-    try:
-        Base.metadata.create_all(bind=engine)
-        logger.info("database_tables_created", extra={"tables": list(Base.metadata.tables.keys())})
-    except Exception as e:
-        logger.exception("database_init_failed", extra={"error": str(e)})
-        raise
+    """Alembic manages schema — this is intentionally a no-op."""

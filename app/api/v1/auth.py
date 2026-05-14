@@ -47,3 +47,8 @@ def login(req: LoginRequest):
 @router.get("/auth/me")
 def me(user: dict = Depends(get_current_user)):
     return {"sub": user.get("sub"), "email": user.get("email")}
+
+
+@router.get("/auth/check")
+def check_access(user: dict = Depends(get_current_user)):
+    return {"authenticated": True, "sub": user.get("sub"), "email": user.get("email")}

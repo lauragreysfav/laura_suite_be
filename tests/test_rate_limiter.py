@@ -7,14 +7,14 @@ from scripts.ingest.rate_limiter import TokenBucket
 def test_token_bucket_allows_burst():
     bucket = TokenBucket(capacity=5, rate=1.0)
     for _ in range(5):
-        assert bucket.try_consume() is True
+        assert bucket._try_consume() is True
 
 
 def test_token_bucket_blocks_when_empty():
     bucket = TokenBucket(capacity=2, rate=1.0)
-    bucket.try_consume()
-    bucket.try_consume()
-    assert bucket.try_consume() is False
+    bucket._try_consume()
+    bucket._try_consume()
+    assert bucket._try_consume() is False
 
 
 @pytest.mark.asyncio
