@@ -48,6 +48,15 @@ stash/metadata/
 config/prowlarr/*.db
 config/prowlarr/*.db-*
 config/prowlarr/*.pid
+config/prowlarr/config.xml
+config/whisparr/*.db
+config/whisparr/*.db-*
+config/whisparr/*.pid
+config/whisparr/config.xml
+config/whisparr/asp/
+config/stash/generated/
+config/stash/*.sqlite
+config/stash/*.sqlite-*
 config/stash/*.sqlite
 config/stash/*.sqlite-*
 config/whisparr/*.pid
