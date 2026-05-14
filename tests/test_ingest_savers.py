@@ -9,10 +9,14 @@ def test_batch_save_performers():
         {"id": "p1", "name": "Alice", "gender": "female", "aliases": "", "images": [], "urls": [],
          "scene_count": 5, "birth_date": "1990-01-01"}
     ]
-    saved = batch_save_performers(session, ts, performers, batch_size=10)
+    saved = batch_save_performers(session, ts, performers)
     assert saved == 1
-    assert session.bulk_save_objects.called
-    ts.bulk_upsert.assert_called_once()
+    ts.bulk_upsert.assert_called_once_with("stashdb_performers", [
+        {"id": "p1", "name": "Alice", "aliases": [], "image_url": None,
+         "gender": "female", "birthdate": "1990-01-01", "scene_count": 5}
+    ])
+    session.bulk_save_objects.assert_called_once()
+    session.commit.assert_called_once()
 
 
 def test_batch_save_performers_skips_male():
@@ -21,9 +25,10 @@ def test_batch_save_performers_skips_male():
     performers = [
         {"id": "p1", "name": "Bob", "gender": "male"}
     ]
-    saved = batch_save_performers(session, ts, performers, batch_size=10)
+    saved = batch_save_performers(session, ts, performers)
     assert saved == 0
     session.bulk_save_objects.assert_not_called()
+    ts.bulk_upsert.assert_not_called()
 
 
 def test_batch_save_studios():
@@ -34,8 +39,9 @@ def test_batch_save_studios():
     ]
     saved = batch_save_studios(session, ts, studios)
     assert saved == 1
-    session.bulk_save_objects.assert_called_once()
     ts.bulk_upsert.assert_called_once()
+    session.bulk_save_objects.assert_called_once()
+    session.commit.assert_called_once()
 
 
 def test_batch_save_scenes():
@@ -48,8 +54,9 @@ def test_batch_save_scenes():
     ]
     saved = batch_save_scenes(session, ts, scenes)
     assert saved == 1
-    session.bulk_save_objects.assert_called_once()
     ts.bulk_upsert.assert_called_once()
+    session.bulk_save_objects.assert_called_once()
+    session.commit.assert_called_once()
 
 
 def test_batch_save_scenes_filters_old():
@@ -62,3 +69,4 @@ def test_batch_save_scenes_filters_old():
     saved = batch_save_scenes(session, ts, scenes)
     assert saved == 0
     session.bulk_save_objects.assert_not_called()
+    ts.bulk_upsert.assert_not_called()

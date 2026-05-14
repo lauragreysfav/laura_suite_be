@@ -106,32 +106,42 @@ def _scene_to_ts(sc: dict) -> dict | None:
     }
 
 
-def batch_save_performers(session, ts, performers: list[dict], batch_size: int = 100) -> int:
+def _bulk_write(session, ts, collection: str, pg_rows: list, ts_docs: list[dict]) -> int:
+    try:
+        ts.bulk_upsert(collection, ts_docs)
+        session.bulk_save_objects(pg_rows)
+        session.commit()
+        return len(pg_rows)
+    except Exception:
+        session.rollback()
+        raise
+
+
+def batch_save_performers(session, ts, performers: list[dict]) -> int:
     females = [p for p in performers if p.get("gender") == "female"]
     if not females:
+        skipped = len(performers)
+        if skipped:
+            logger.debug("skipped_non_female_performers", extra={"count": skipped})
         return 0
     pg_rows = [_performer_to_pg(p) for p in females]
     ts_docs = [_performer_to_ts(p) for p in females]
-    session.bulk_save_objects(pg_rows)
-    session.commit()
-    ts.bulk_upsert("stashdb_performers", ts_docs)
-    logger.info("saved_performers", extra={"count": len(females)})
-    return len(females)
+    saved = _bulk_write(session, ts, "stashdb_performers", pg_rows, ts_docs)
+    logger.info("saved_performers", extra={"count": saved})
+    return saved
 
 
-def batch_save_studios(session, ts, studios: list[dict], batch_size: int = 100) -> int:
+def batch_save_studios(session, ts, studios: list[dict]) -> int:
     if not studios:
         return 0
     pg_rows = [_studio_to_pg(s) for s in studios]
     ts_docs = [_studio_to_ts(s) for s in studios]
-    session.bulk_save_objects(pg_rows)
-    session.commit()
-    ts.bulk_upsert("stashdb_studios", ts_docs)
-    logger.info("saved_studios", extra={"count": len(studios)})
-    return len(studios)
+    saved = _bulk_write(session, ts, "stashdb_studios", pg_rows, ts_docs)
+    logger.info("saved_studios", extra={"count": saved})
+    return saved
 
 
-def batch_save_scenes(session, ts, scenes: list[dict], batch_size: int = 100) -> int:
+def batch_save_scenes(session, ts, scenes: list[dict]) -> int:
     pg_rows = []
     ts_docs = []
     for sc in scenes:
@@ -143,8 +153,6 @@ def batch_save_scenes(session, ts, scenes: list[dict], batch_size: int = 100) ->
             ts_docs.append(tsd)
     if not pg_rows:
         return 0
-    session.bulk_save_objects(pg_rows)
-    session.commit()
-    ts.bulk_upsert("stashdb_scenes", ts_docs)
-    logger.info("saved_scenes", extra={"count": len(pg_rows)})
-    return len(pg_rows)
+    saved = _bulk_write(session, ts, "stashdb_scenes", pg_rows, ts_docs)
+    logger.info("saved_scenes", extra={"count": saved})
+    return saved
