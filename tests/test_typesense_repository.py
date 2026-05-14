@@ -2,7 +2,8 @@ from unittest.mock import MagicMock
 from app.library.common import repository
 
 
-def test_search_index_calls_typesense():
+def test_search_index_calls_typesense(monkeypatch):
+    monkeypatch.setattr(repository, "SessionLocal", MagicMock)
     fake = MagicMock()
     fake.search.return_value = [{"title": "x"}]
     repository._client = fake
@@ -20,7 +21,15 @@ def test_suggest_index_returns_list():
     assert len(out) == 1
 
 
-def test_get_document_returns_none_on_miss():
+def test_get_document_returns_none_on_miss(monkeypatch):
+    class FakeSession:
+        def query(self, model):
+            q = MagicMock()
+            q.filter.return_value.first.return_value = None
+            return q
+        def close(self):
+            pass
+    monkeypatch.setattr(repository, "SessionLocal", lambda: FakeSession())
     from app.services.typesense_client import TypesenseClient
     fake = MagicMock(spec=TypesenseClient)
     fake.get.return_value = None
@@ -30,7 +39,8 @@ def test_get_document_returns_none_on_miss():
     assert out is None
 
 
-def test_search_by_hashes_returns_matched():
+def test_search_by_hashes_returns_matched(monkeypatch):
+    monkeypatch.setattr(repository, "SessionLocal", MagicMock)
     from app.services.typesense_client import TypesenseClient
     fake = MagicMock(spec=TypesenseClient)
     fake.search_by_hashes.return_value = [

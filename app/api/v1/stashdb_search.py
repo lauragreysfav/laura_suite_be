@@ -207,8 +207,4 @@ def get_entity(
         from app.api.v1.stash import _normalize_paths
         return _normalize_paths(local)
 
-    live = _try_stashdb_live(type, id)
-    if live:
-        return live
-
     raise HTTPException(status_code=404, detail=f"{type} {id} not found")

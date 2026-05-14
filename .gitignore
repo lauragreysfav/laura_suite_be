@@ -45,6 +45,12 @@ config/stash/generated/
 stash/cache/
 stash/generated/
 stash/metadata/
+config/prowlarr/*.db
+config/prowlarr/*.db-*
+config/prowlarr/*.pid
+config/stash/*.sqlite
+config/stash/*.sqlite-*
+config/whisparr/*.pid
 *.log
 __pycache__/
 .pytest_cache/

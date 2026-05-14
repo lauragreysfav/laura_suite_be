@@ -1,3 +1,4 @@
+import re
 from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import BaseModel
 from app.services import torbox
@@ -62,13 +63,21 @@ def add_torrents_batch(body: BatchAddMagnetRequest):
     return {"results": results}
 
 
-@router.post("/add/batch/v2")
+_IH_RE = re.compile(r"^[a-fA-F0-9]{40}$")
+
+def _valid_info_hash(s: str) -> bool:
+    return bool(_IH_RE.match(s))
+
 def add_torrents_batch_v2(body: BatchAddMagnetRequestV2):
     results = []
     for item in body.items:
         magnet = item.magnet or ""
-        if (not magnet or not magnet.startswith("magnet:?xt=urn:btih:")) and item.info_hash:
-            magnet = build_magnet(item.info_hash, item.title or "")
+        if (not magnet or not magnet.startswith("magnet:?xt=urn:btih:")):
+            if item.info_hash and _valid_info_hash(item.info_hash):
+                magnet = build_magnet(item.info_hash, item.title or "")
+            else:
+                results.append({"magnet": magnet[:60], "status": "error", "error": "no valid magnet or info_hash"})
+                continue
         try:
             data = torbox.create_torrent(magnet, body.seed)
             results.append({"magnet": magnet[:60], "status": "ok", "data": data})

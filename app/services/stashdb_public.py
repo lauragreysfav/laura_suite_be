@@ -50,7 +50,13 @@ def find_by_hash(info_hash: str):
       }
     }
     """
-    return _query(q, {"fp": {"hash": info_hash, "algorithm": "MD5"}})
+    for algo in ["SHA1", "SHA256", "MD5"]:
+        result = _query(q, {"fp": {"hash": info_hash, "algorithm": algo}})
+        d = result.get("data") or {}
+        scene = d.get("findSceneByFingerprint")
+        if scene:
+            return result
+    return {"data": None}
 
 
 def batch_find_by_hashes(info_hashes: list[str]):

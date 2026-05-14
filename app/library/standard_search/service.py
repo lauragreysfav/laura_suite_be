@@ -70,34 +70,36 @@ def enrich_by_hashes(info_hashes: list[str]) -> dict[str, dict]:
             live = stashdb_live.enrich_by_hashes(missing)
             if live:
                 db = SessionLocal()
-                ts = TypesenseClient()
-                for h, data in live.items():
-                    local[h] = data
-                    db.merge(StashDBSceneCache(
-                        stashdb_id=data.get("id"),
-                        title=data.get("title"),
-                        details=data.get("details"),
-                        release_date=data.get("release_date"),
-                        duration=(data.get("file") or {}).get("duration"),
-                        studio_name=(data.get("studio") or {}).get("name"),
-                        performer_names=[p.get("name") for p in data.get("performers", [])],
-                        tags=[t.get("name") for t in data.get("tags", [])],
-                        images=[(data.get("paths") or {}).get("screenshot")] if (data.get("paths") or {}).get("screenshot") else [],
-                        raw_json=data,
-                    ))
-                    ts.upsert("stashdb_scenes", {
-                        "id": data.get("id"),
-                        "title": data.get("title", ""),
-                        "details": data.get("details"),
-                        "release_date": data.get("release_date"),
-                        "duration": (data.get("file") or {}).get("duration"),
-                        "studio_name": (data.get("studio") or {}).get("name"),
-                        "performer_names": [p.get("name") for p in data.get("performers", [])],
-                        "tags": [t.get("name") for t in data.get("tags", [])],
-                        "images": [(data.get("paths") or {}).get("screenshot")] if (data.get("paths") or {}).get("screenshot") else [],
-                    })
-                db.commit()
-                db.close()
+                try:
+                    ts = TypesenseClient()
+                    for h, data in live.items():
+                        local[h] = data
+                        db.merge(StashDBSceneCache(
+                            stashdb_id=data.get("id"),
+                            title=data.get("title"),
+                            details=data.get("details"),
+                            release_date=data.get("release_date"),
+                            duration=(data.get("file") or {}).get("duration"),
+                            studio_name=(data.get("studio") or {}).get("name"),
+                            performer_names=[p.get("name") for p in data.get("performers", [])],
+                            tags=[t.get("name") for t in data.get("tags", [])],
+                            images=[(data.get("paths") or {}).get("screenshot")] if (data.get("paths") or {}).get("screenshot") else [],
+                            raw_json=data,
+                        ))
+                        ts.upsert("stashdb_scenes", {
+                            "id": data.get("id"),
+                            "title": data.get("title", ""),
+                            "details": data.get("details"),
+                            "release_date": data.get("release_date"),
+                            "duration": (data.get("file") or {}).get("duration"),
+                            "studio_name": (data.get("studio") or {}).get("name"),
+                            "performer_names": [p.get("name") for p in data.get("performers", [])],
+                            "tags": [t.get("name") for t in data.get("tags", [])],
+                            "images": [(data.get("paths") or {}).get("screenshot")] if (data.get("paths") or {}).get("screenshot") else [],
+                        })
+                    db.commit()
+                finally:
+                    db.close()
         except Exception as e:
             logger.warning("enrich_live_fallback_error", extra={"error": str(e)})
     return local
@@ -131,4 +133,4 @@ def _cache_live_results(entity_type: str, results: list[dict]):
                 }
                 index_document(STASHDB_INDEX_SCENES, item["id"], body)
         except Exception as e:
-            logger.debug("cache_skip", extra={"error": str(e)})
+            logger.warning("cache_skip", extra={"error": str(e)})

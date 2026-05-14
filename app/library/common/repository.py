@@ -1,3 +1,4 @@
+import json
 import logging
 from app.library.common.schema import (
     STASHDB_INDEX_PERFORMERS,
@@ -5,62 +6,27 @@ from app.library.common.schema import (
     STASHDB_INDEX_SCENES,
 )
 from app.services.typesense_client import TypesenseClient
+from app.database import SessionLocal
+from app.models import StashDBPerformerCache, StashDBStudioCache, StashDBSceneCache
 
 logger = logging.getLogger("laura.library.common.repository")
 
 _client: TypesenseClient | None = None
 
 
+def _get_model_class(index: str):
+    if index == STASHDB_INDEX_PERFORMERS:
+        return StashDBPerformerCache
+    elif index == STASHDB_INDEX_STUDIOS:
+        return StashDBStudioCache
+    elif index == STASHDB_INDEX_SCENES:
+        return StashDBSceneCache
+    return None
+
+
 def ensure_indices() -> None:
-    client = get_client()
-    schemas = [
-        {
-            "name": STASHDB_INDEX_PERFORMERS,
-            "fields": [
-                {"name": "stashdb_id", "type": "string"},
-                {"name": "name", "type": "string"},
-                {"name": "aliases", "type": "string"},
-                {"name": "image_url", "type": "string"},
-                {"name": "gender", "type": "string"},
-                {"name": "scene_count", "type": "int32"},
-                {"name": "career_years", "type": "string"},
-                {"name": "birthdate", "type": "int64"},
-                {"name": "urls", "type": "object"},
-                {"name": "updated_at", "type": "int64"},
-            ],
-        },
-        {
-            "name": STASHDB_INDEX_STUDIOS,
-            "fields": [
-                {"name": "stashdb_id", "type": "string"},
-                {"name": "name", "type": "string"},
-                {"name": "image_url", "type": "string"},
-                {"name": "scene_count", "type": "int32"},
-                {"name": "parent_studio", "type": "string"},
-                {"name": "urls", "type": "object"},
-                {"name": "updated_at", "type": "int64"},
-            ],
-        },
-        {
-            "name": STASHDB_INDEX_SCENES,
-            "fields": [
-                {"name": "stashdb_id", "type": "string"},
-                {"name": "title", "type": "string"},
-                {"name": "details", "type": "string"},
-                {"name": "date", "type": "int64"},
-                {"name": "duration", "type": "int32"},
-                {"name": "images", "type": "string[]"},
-                {"name": "studio_id", "type": "string"},
-                {"name": "studio_name", "type": "string"},
-                {"name": "performer_ids", "type": "string[]"},
-                {"name": "performer_names", "type": "string[]"},
-                {"name": "fingerprints", "type": "object[]"},
-                {"name": "tags", "type": "string[]"},
-                {"name": "updated_at", "type": "int64"},
-            ],
-        },
-    ]
-    client.ensure_collections(schemas)
+    from app.library.common.typesense_schema import SCHEMAS
+    get_client().ensure_collections(SCHEMAS)
 
 
 def get_client() -> TypesenseClient:
@@ -76,8 +42,39 @@ def search_index(index: str, query_text: str, fields: list[str] | None = None, s
     if filters:
         clauses = [f"{k}:={v}" for k, v in filters.items() if v]
         filter_by = " && ".join(clauses) if clauses else None
+        
     query_by = [f.split("^")[0] for f in (fields or ["name", "title", "aliases", "details"])]
-    return client.search(index, query_text or "*", query_by, per_page=size, filters=filter_by)
+    hits = client.search(index, query_text or "*", query_by, per_page=size, filters=filter_by)
+    
+    if not hits:
+        return []
+        
+    model_class = _get_model_class(index)
+    if not model_class:
+        return hits
+        
+    doc_ids = [hit.get("stashdb_id") or hit.get("id") for hit in hits]
+    
+    db = SessionLocal()
+    try:
+        records = db.query(model_class).filter(model_class.stashdb_id.in_(doc_ids)).all()
+        # Map by id
+        record_map = {}
+        for r in records:
+            record_map[r.stashdb_id] = r.raw_json
+            
+        # Preserve search order
+        hydrated_results = []
+        for hit in hits:
+            doc_id = hit.get("stashdb_id") or hit.get("id")
+            if doc_id in record_map:
+                hydrated_results.append(record_map[doc_id])
+            else:
+                hydrated_results.append(hit)
+                
+        return hydrated_results
+    finally:
+        db.close()
 
 
 def suggest_index(index: str, prefix: str, field: str = "name", size: int = 10) -> list[dict]:
@@ -94,7 +91,23 @@ def bulk_index(index: str, documents: list[dict], id_field: str = "stashdb_id") 
 
 
 def get_document(index: str, doc_id: str) -> dict | None:
-    return get_client().get(index, doc_id)
+    model_class = _get_model_class(index)
+    if not model_class:
+        return get_client().get(index, doc_id)
+        
+    db = SessionLocal()
+    try:
+        record = db.query(model_class).filter(model_class.stashdb_id == doc_id).first()
+        if record and record.raw_json:
+            # Return the exact StashDB representation cached in PostgreSQL
+            if isinstance(record.raw_json, str):
+                return json.loads(record.raw_json)
+            return record.raw_json
+            
+        # Fallback to Typesense if not in DB
+        return get_client().get(index, doc_id)
+    finally:
+        db.close()
 
 
 def delete_document(index: str, doc_id: str) -> None:
@@ -102,12 +115,36 @@ def delete_document(index: str, doc_id: str) -> None:
 
 
 def search_by_hashes(index: str, hashes: list[str]) -> dict[str, dict]:
-    docs = get_client().search_by_hashes(index, hashes)
+    if not hashes:
+        return {}
+        
+    client = get_client()
+    docs = client.search_by_hashes(index, hashes)
+    
     result: dict[str, dict] = {}
-    for d in docs:
-        fps = d.get("fingerprints") or []
-        for fp in fps:
-            val = str(fp).lower()
-            if val in [h.lower() for h in hashes]:
-                result[val] = d
-    return result
+    model_class = _get_model_class(index)
+    
+    db = SessionLocal()
+    try:
+        doc_ids = [d.get("stashdb_id") or d.get("id") for d in docs]
+        records = []
+        if model_class and doc_ids:
+            records = db.query(model_class).filter(model_class.stashdb_id.in_(doc_ids)).all()
+            
+        record_map = {}
+        for r in records:
+            record_map[r.stashdb_id] = r.raw_json
+
+        for d in docs:
+            doc_id = d.get("stashdb_id") or d.get("id")
+            full_doc = record_map.get(doc_id, d)
+            
+            fps = d.get("fingerprints") or []
+            for fp in fps:
+                val = str(fp).lower()
+                if val in [h.lower() for h in hashes]:
+                    result[val] = full_doc
+                    
+        return result
+    finally:
+        db.close()

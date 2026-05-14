@@ -109,7 +109,7 @@ def fetch_scenes_by_studio(studio_id: str, page: int = 1) -> dict:
             "studios": {"value": [studio_id], "modifier": "INCLUDES"},
             "page": page,
             "per_page": PER_PAGE,
-            "date": {"value": "2001-01-01", "modifier": "GREATER_THAN"},
+            "date": {"value": "2000-01-01", "modifier": "GREATER_THAN_OR_EQUALS"},
         }
     })
 
@@ -147,10 +147,12 @@ def save_performer(session, p):
     session.merge(cache)
     session.commit()
 
+    aliases_raw = p.get("aliases", "") or ""
     ts.upsert("stashdb_performers", {
         "id": pid,
         "name": p.get("name", ""),
-        "aliases": p.get("aliases", ""),
+        "aliases": [a.strip() for a in aliases_raw.split(",") if a.strip()],
+        "image_url": imgs[0]["url"] if imgs else None,
         "gender": gender,
         "birthdate": p.get("birth_date"),
         "scene_count": p.get("scene_count", 0),
@@ -177,6 +179,7 @@ def save_studio(session, s):
     ts.upsert("stashdb_studios", {
         "id": s["id"],
         "name": s.get("name", ""),
+        "image_url": imgs[0]["url"] if imgs else None,
         "scene_count": s.get("scene_count", 0),
     })
 
