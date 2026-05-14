@@ -14,5 +14,4 @@ redis[hiredis]>=5.2.0
 
 alembic>=1.13.0
 
-opensearch-py>=2.7.0
 typesense==0.21.0

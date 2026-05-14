@@ -1,9 +1,66 @@
 import logging
+from app.library.common.schema import (
+    STASHDB_INDEX_PERFORMERS,
+    STASHDB_INDEX_STUDIOS,
+    STASHDB_INDEX_SCENES,
+)
 from app.services.typesense_client import TypesenseClient
 
 logger = logging.getLogger("laura.library.common.repository")
 
 _client: TypesenseClient | None = None
+
+
+def ensure_indices() -> None:
+    client = get_client()
+    schemas = [
+        {
+            "name": STASHDB_INDEX_PERFORMERS,
+            "fields": [
+                {"name": "stashdb_id", "type": "string"},
+                {"name": "name", "type": "string"},
+                {"name": "aliases", "type": "string"},
+                {"name": "image_url", "type": "string"},
+                {"name": "gender", "type": "string"},
+                {"name": "scene_count", "type": "int32"},
+                {"name": "career_years", "type": "string"},
+                {"name": "birthdate", "type": "int64"},
+                {"name": "urls", "type": "object"},
+                {"name": "updated_at", "type": "int64"},
+            ],
+        },
+        {
+            "name": STASHDB_INDEX_STUDIOS,
+            "fields": [
+                {"name": "stashdb_id", "type": "string"},
+                {"name": "name", "type": "string"},
+                {"name": "image_url", "type": "string"},
+                {"name": "scene_count", "type": "int32"},
+                {"name": "parent_studio", "type": "string"},
+                {"name": "urls", "type": "object"},
+                {"name": "updated_at", "type": "int64"},
+            ],
+        },
+        {
+            "name": STASHDB_INDEX_SCENES,
+            "fields": [
+                {"name": "stashdb_id", "type": "string"},
+                {"name": "title", "type": "string"},
+                {"name": "details", "type": "string"},
+                {"name": "date", "type": "int64"},
+                {"name": "duration", "type": "int32"},
+                {"name": "images", "type": "string[]"},
+                {"name": "studio_id", "type": "string"},
+                {"name": "studio_name", "type": "string"},
+                {"name": "performer_ids", "type": "string[]"},
+                {"name": "performer_names", "type": "string[]"},
+                {"name": "fingerprints", "type": "object[]"},
+                {"name": "tags", "type": "string[]"},
+                {"name": "updated_at", "type": "int64"},
+            ],
+        },
+    ]
+    client.ensure_collections(schemas)
 
 
 def get_client() -> TypesenseClient:

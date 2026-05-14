@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import BaseModel
 from app.services import torbox
+from app.services.magnet import build_magnet
 from app.auth.dependencies import get_current_user
 
 router = APIRouter(prefix="/torrents", tags=["torrents"])
@@ -12,6 +13,22 @@ class PauseResumeRequest(BaseModel):
 
 class AddMagnetRequest(BaseModel):
     magnet: str
+    seed: int = 1
+
+
+class BatchAddMagnetRequest(BaseModel):
+    magnets: list[str]
+    seed: int = 1
+
+
+class BatchAddMagnetItem(BaseModel):
+    magnet: str | None = None
+    info_hash: str | None = None
+    title: str | None = None
+
+
+class BatchAddMagnetRequestV2(BaseModel):
+    items: list[BatchAddMagnetItem]
     seed: int = 1
 
 
@@ -31,6 +48,33 @@ def add_torrent(body: AddMagnetRequest):
         return data
     except Exception as e:
         raise HTTPException(status_code=502, detail=str(e))
+
+
+@router.post("/add/batch")
+def add_torrents_batch(body: BatchAddMagnetRequest):
+    results = []
+    for magnet in body.magnets:
+        try:
+            data = torbox.create_torrent(magnet, body.seed)
+            results.append({"magnet": magnet[:60], "status": "ok", "data": data})
+        except Exception as e:
+            results.append({"magnet": magnet[:60], "status": "error", "error": str(e)})
+    return {"results": results}
+
+
+@router.post("/add/batch/v2")
+def add_torrents_batch_v2(body: BatchAddMagnetRequestV2):
+    results = []
+    for item in body.items:
+        magnet = item.magnet or ""
+        if (not magnet or not magnet.startswith("magnet:?xt=urn:btih:")) and item.info_hash:
+            magnet = build_magnet(item.info_hash, item.title or "")
+        try:
+            data = torbox.create_torrent(magnet, body.seed)
+            results.append({"magnet": magnet[:60], "status": "ok", "data": data})
+        except Exception as e:
+            results.append({"magnet": magnet[:60], "status": "error", "error": str(e)})
+    return {"results": results}
 
 
 @router.patch("/{torrent_id}")

@@ -131,6 +131,18 @@ services:
       - ./stash/generated:/generated
       - /mnt/host/d/LauraMedia:/data/lauramedia
 
+  typesense:
+    image: typesense/typesense:27.0
+    container_name: laura-typesense
+    ports:
+      - 127.0.0.1:8108:8108
+    environment:
+      - TYPESENSE_API_KEY=${TYPESENSE_API_KEY:-xyz}
+      - TYPESENSE_DATA_DIR=/data
+    volumes:
+      - typesense_data:/data
+    restart: unless-stopped
+
   laura-backend:
     build:
       context: .
@@ -143,6 +155,8 @@ services:
     ports:
       - 127.0.0.1:8000:8000
     depends_on:
+      typesense:
+        condition: service_started
       stash:
         condition: service_started
       postgres:
@@ -214,6 +228,7 @@ services:
 volumes:
   postgres_data:
   redis_data:
+  typesense_data:
 
 
 

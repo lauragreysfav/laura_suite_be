@@ -48,7 +48,7 @@ def batch_search(self, job_id: int):
                 job_id=job_id,
                 title=r.get("title", ""),
                 info_hash=r.get("infoHash", ""),
-                magnet=r.get("magnetUri", ""),
+                magnet=r.get("magnetUrl", "") or r.get("magnetUri", ""),
                 source=r.get("source", ""),
                 indexer=r.get("indexer", ""),
                 size=str(r.get("size", "")),

@@ -25,6 +25,10 @@ celery_app.conf.update(
             "schedule": 3600.0,
             "args": (None,),
         },
+        "prime-stashdb-cache-every-6h": {
+            "task": "app.tasks.library_search_tasks.prime_suggest_cache",
+            "schedule": 21600.0,
+        },
     },
 )
 
@@ -32,3 +36,4 @@ celery_app.conf.update(
 import app.tasks.search_tasks
 import app.tasks.tracker_tasks
 import app.tasks.email_tasks
+import app.tasks.library_search_tasks
