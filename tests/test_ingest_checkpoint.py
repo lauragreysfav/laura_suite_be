@@ -23,6 +23,7 @@ def test_checkpoint_append(tmp_path):
     cp = Checkpoint(path=str(tmp_path / "ckpt.json"))
     cp.append("seen_studio_ids", "s1")
     cp.append("seen_studio_ids", "s2")
+    cp.append("seen_studio_ids", "s1")  # duplicate — should be no-op
     cp.save()
     cp2 = Checkpoint(path=str(tmp_path / "ckpt.json"))
     cp2.load()
