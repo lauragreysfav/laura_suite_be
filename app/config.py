@@ -26,6 +26,7 @@ class Settings(BaseSettings):
     typesense_api_key: str = ""
     typesense_timeout: int = 5
     stashdb_rate_limit_seconds: float = 1.0
+    stashdb_ingest_concurrency: int = 5
 
     database_path: str = "/data/laura.db"
     log_level: str = "INFO"
