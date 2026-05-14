@@ -1,3 +1,4 @@
+import urllib.parse
 import typesense
 from app.config import settings
 
@@ -15,9 +16,12 @@ def build_hash_filter(hashes: list[str]) -> str:
 
 class TypesenseClient:
     def __init__(self) -> None:
-        host = settings.typesense_host.replace("http://", "").replace("https://", "")
+        parsed = urllib.parse.urlparse(settings.typesense_host)
+        host = parsed.hostname or "typesense"
+        port = parsed.port or 8108
+        protocol = parsed.scheme or "http"
         self.client = typesense.Client({
-            "nodes": [{"host": host.split(":")[0], "port": int(host.split(":")[1]), "protocol": "http"}],
+            "nodes": [{"host": host, "port": port, "protocol": protocol}],
             "api_key": settings.typesense_api_key,
             "connection_timeout_seconds": settings.typesense_timeout,
         })
@@ -52,9 +56,10 @@ class TypesenseClient:
         except typesense.exceptions.ObjectNotFound:
             pass
 
-    def search_by_hashes(self, collection: str, hashes: list[str]) -> list[dict]:
+    def search_by_hashes(self, collection: str, hashes: list[str], query_by: list[str] | None = None) -> list[dict]:
         if not hashes:
             return []
-        params = {"q": "*", "query_by": "title", "filter_by": build_hash_filter(hashes), "per_page": len(hashes)}
+        qb = query_by or ["title"]
+        params = {"q": "*", "query_by": ",".join(qb), "filter_by": build_hash_filter(hashes), "per_page": len(hashes)}
         resp = self.client.collections[collection].documents.search(params)
         return [h["document"] for h in resp.get("hits", [])]
