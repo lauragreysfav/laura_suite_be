@@ -22,6 +22,12 @@ class Settings(BaseSettings):
     prowlarr_url: str = "http://gluetun:9696"
     prowlarr_api_key: str = ""
 
+    opensearch_hosts: str = "http://opensearch:9200"
+    typesense_host: str = "http://typesense:8108"
+    typesense_api_key: str = ""
+    typesense_timeout: int = 5
+    stashdb_rate_limit_seconds: float = 1.0
+
     database_path: str = "/data/laura.db"
     log_level: str = "INFO"
     secret_key: str = "change-me"
