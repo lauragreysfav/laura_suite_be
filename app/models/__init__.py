@@ -122,6 +122,9 @@ class StashDBPerformerCache(Base):
     aliases = Column(Text)
     image_url = Column(Text)
     scene_count = Column(Integer, default=0)
+    gender = Column(String(50))
+    birthdate = Column(String(50))
+    urls = Column(JSON)
     career_years = Column(String(100))
     raw_json = Column(JSON)
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
@@ -135,8 +138,41 @@ class StashDBStudioCache(Base):
     image_url = Column(Text)
     scene_count = Column(Integer, default=0)
     parent_studio = Column(String(255))
+    urls = Column(JSON)
     raw_json = Column(JSON)
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+
+
+class StashDBSceneCache(Base):
+    __tablename__ = "stashdb_cache_scenes"
+    id = Column(Integer, primary_key=True)
+    stashdb_id = Column(String(255), unique=True, nullable=False)
+    title = Column(String(500))
+    details = Column(Text)
+    release_date = Column(String(20))
+    duration = Column(Integer)
+    studio_name = Column(String(255))
+    studio_id = Column(String(255))
+    performer_names = Column(JSON)
+    performer_ids = Column(JSON)
+    tags = Column(JSON)
+    fingerprints = Column(JSON)
+    images = Column(JSON)
+    raw_json = Column(JSON)
+    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+
+
+class StandardSearchHistory(Base):
+    __tablename__ = "standard_search_history"
+    id = Column(Integer, primary_key=True)
+    user_id = Column(String(255), nullable=False, index=True)
+    query = Column(String(500), nullable=False)
+    filters = Column(JSON)
+    result_count = Column(Integer, default=0)
+    status = Column(String(50), default="running")
+    error = Column(Text)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    completed_at = Column(DateTime(timezone=True), nullable=True)
 
 
 class LibraryBulkJob(Base):
