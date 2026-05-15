@@ -12,15 +12,15 @@ from app.library.common.schema import (
 
 
 def suggest_performers(prefix: str, size: int = 10) -> list[dict]:
-    return suggest_index(STASHDB_INDEX_PERFORMERS, prefix, field="name.autocomplete", size=size)
+    return suggest_index(STASHDB_INDEX_PERFORMERS, prefix, field="name", size=size)
 
 
 def suggest_studios(prefix: str, size: int = 10) -> list[dict]:
-    return suggest_index(STASHDB_INDEX_STUDIOS, prefix, field="name.autocomplete", size=size)
+    return suggest_index(STASHDB_INDEX_STUDIOS, prefix, field="name", size=size)
 
 
 def suggest_scenes(prefix: str, size: int = 10) -> list[dict]:
-    return suggest_index(STASHDB_INDEX_SCENES, prefix, field="title.autocomplete", size=size)
+    return suggest_index(STASHDB_INDEX_SCENES, prefix, field="title", size=size)
 
 
 def search_performers(query: str, size: int = 20) -> list[dict]:

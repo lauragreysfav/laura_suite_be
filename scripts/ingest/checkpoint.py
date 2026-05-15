@@ -34,10 +34,8 @@ class Checkpoint:
                 logger.info(
                     "checkpoint_loaded", extra={"phase": self._data.get("phase")}
                 )
-            except (json.JSONDecodeError, OSError) as e:
-                logger.warning(
-                    "checkpoint_load_failed", extra={"error": str(e)}
-                )
+            except Exception as e:
+                logger.exception("checkpoint_load_failed")
 
     def save(self) -> None:
         if not self._dirty:
