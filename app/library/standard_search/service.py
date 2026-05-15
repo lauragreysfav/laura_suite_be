@@ -21,7 +21,7 @@ def suggest(query: str, search_type: str = "all") -> list[dict]:
                 if local:
                     for p in local:
                         results.append({
-                            "id": p["stashdb_id"], "name": p["name"],
+                            "id": p["id"], "name": p["name"],
                             "type": "performer", "image_url": p.get("image_url"),
                         })
                 else:
@@ -34,7 +34,7 @@ def suggest(query: str, search_type: str = "all") -> list[dict]:
                 if local:
                     for s in local:
                         results.append({
-                            "id": s["stashdb_id"], "name": s["name"],
+                            "id": s["id"], "name": s["name"],
                             "type": "studio", "image_url": s.get("image_url"),
                         })
                 else:
@@ -47,7 +47,7 @@ def suggest(query: str, search_type: str = "all") -> list[dict]:
                 if local:
                     for s in local:
                         results.append({
-                            "id": s["stashdb_id"], "name": s["title"],
+                            "id": s["id"], "name": s["title"],
                             "type": "scene", "image_url": s.get("images", [None])[0],
                             "studio_name": s.get("studio_name"),
                         })
@@ -110,7 +110,6 @@ def _cache_live_results(entity_type: str, results: list[dict]):
         try:
             if entity_type == "performer":
                 body = {
-                    "stashdb_id": item["id"],
                     "name": item["name"],
                     "image_url": item.get("image_url"),
                     "scene_count": 0,
@@ -118,7 +117,6 @@ def _cache_live_results(entity_type: str, results: list[dict]):
                 index_document("stashdb_performers", item["id"], body)
             elif entity_type == "studio":
                 body = {
-                    "stashdb_id": item["id"],
                     "name": item["name"],
                     "image_url": item.get("image_url"),
                     "scene_count": 0,
@@ -126,7 +124,6 @@ def _cache_live_results(entity_type: str, results: list[dict]):
                 index_document("stashdb_studios", item["id"], body)
             elif entity_type == "scene":
                 body = {
-                    "stashdb_id": item["id"],
                     "title": item.get("name", ""),
                     "images": [item["image_url"]] if item.get("image_url") else [],
                     "studio_name": item.get("studio_name"),
