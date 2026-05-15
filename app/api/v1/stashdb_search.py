@@ -31,7 +31,7 @@ def suggest(
 
 def _reshape_performer(doc: dict) -> dict:
     return {
-        "id": doc["stashdb_id"],
+        "id": doc["id"],
         "name": doc.get("name", ""),
         "image_path": doc.get("image_url"),
         "scene_count": doc.get("scene_count", 0),
@@ -43,7 +43,7 @@ def _reshape_performer(doc: dict) -> dict:
 
 def _reshape_studio(doc: dict) -> dict:
     return {
-        "id": doc["stashdb_id"],
+        "id": doc["id"],
         "name": doc.get("name", ""),
         "image_path": doc.get("image_url"),
         "scene_count": doc.get("scene_count", 0),
@@ -56,7 +56,7 @@ def _reshape_scene(doc: dict) -> dict:
     tags = doc.get("tags") or []
     performer_names = doc.get("performer_names") or []
     return {
-        "id": doc["stashdb_id"],
+        "id": doc["id"],
         "title": doc.get("title", ""),
         "date": doc.get("release_date"),
         "details": doc.get("details"),
