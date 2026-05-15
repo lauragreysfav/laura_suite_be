@@ -9,7 +9,7 @@ logger = logging.getLogger("laura.tasks.library_search")
 
 @celery_app.task(name="library_search.prime_suggest_cache")
 def prime_suggest_cache():
-    """Prime the OpenSearch cache by searching common terms.
+    """Prime the Typesense cache by searching common terms.
     Runs every 6h to keep frequently-accessed entities warm."""
     ensure_indices()
     common_terms = ["a", "ma", "mi", "mo", "st"]

@@ -15,7 +15,7 @@ def test_batch_save_performers():
         {"id": "p1", "name": "Alice", "aliases": [], "image_url": None,
          "gender": "female", "birthdate": "1990-01-01", "scene_count": 5}
     ])
-    session.bulk_save_objects.assert_called_once()
+    session.execute.assert_called_once()
     session.commit.assert_called_once()
 
 
@@ -27,7 +27,7 @@ def test_batch_save_performers_skips_male():
     ]
     saved = batch_save_performers(session, ts, performers)
     assert saved == 0
-    session.bulk_save_objects.assert_not_called()
+    session.execute.assert_not_called()
     ts.bulk_upsert.assert_not_called()
 
 

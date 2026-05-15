@@ -18,6 +18,10 @@ defaults:
         scangeneratepreviews: true
         scangeneratesprites: true
         scangeneratethumbnails: true
+ffmpeg:
+    encoder_preset: h264_nvenc
+    hwaccel: true
+    hwaccel_type: cuda
 gallery_cover_regex: (poster|cover|folder|board)\.[^\.]+$
 generated: /generated
 host: 0.0.0.0
@@ -27,7 +31,7 @@ minimum_sprites: 10
 no_proxy: localhost,127.0.0.1,192.168.0.0/16,10.0.0.0/8,172.16.0.0/12
 nobrowser: false
 notifications_enabled: true
-parallel_tasks: 1
+parallel_tasks: 2
 plugins:
     disabled:
         - Theme-BlackHole
@@ -153,8 +157,24 @@ ui:
         setTags: true
         tagOperation: merge
     taskDefaults:
+        generate:
+            clipPreviews: true
+            covers: true
+            imagePhashes: true
+            imageThumbnails: true
+            interactiveHeatmapsSpeeds: true
+            markerScreenshots: true
+            markers: true
+            overwrite: true
+            phashes: true
+            previewOptions:
+                previewPreset: slow
+                previewSegmentDuration: 0
+                previewSegments: 0
+            previews: true
+            sprites: true
         scan:
-            rescan: false
+            rescan: true
             scanGenerateClipPreviews: true
             scanGenerateCovers: true
             scanGenerateImagePhashes: true

@@ -27,7 +27,7 @@ query SearchPerformers($input: PerformerQueryInput!) {
 STUDIO_QUERY = """
 query GetStudio($id: ID!) {
   findStudio(id: $id) {
-    id name images { url } scene_count parent { id name } urls { url type }
+    id name images { url } parent { id name } urls { url type }
   }
 }
 """
@@ -86,19 +86,18 @@ class StashDBClient:
             logger.warning("studio_fetch_error", extra={"id": studio_id, "error": str(e)})
             return None
 
-    async def fetch_scenes_page(self, studio_id: str, page: int = 1) -> tuple[list[dict], int]:
+    async def fetch_scenes_by_performer(self, performer_id: str, page: int = 1) -> tuple[list[dict], int]:
         try:
             data = await self._query(SCENES_QUERY, {
                 "input": {
-                    "studios": {"value": [studio_id], "modifier": "INCLUDES"},
+                    "performers": {"value": [performer_id], "modifier": "INCLUDES"},
                     "page": page,
                     "per_page": PER_PAGE,
-                    "date": {"value": "2000-01-01", "modifier": "GREATER_THAN_OR_EQUALS"},
                 }
             })
             d = data.get("data") or {}
             qs = d.get("queryScenes") or {}
             return qs.get("scenes", []), qs.get("count", 0)
         except Exception as e:
-            logger.warning("scenes_fetch_error", extra={"studio": studio_id, "page": page, "error": str(e)})
+            logger.warning("performer_scenes_fetch_error", extra={"performer": performer_id, "page": page, "error": str(e)})
             return [], 0
