@@ -1,4 +1,5 @@
 import logging
+from typing import Optional
 from app.database import SessionLocal
 from app.services import stashdb_public as stashdb_live
 from app.services.typesense_client import TypesenseClient
@@ -10,7 +11,41 @@ from app.models import StashDBSceneCache
 logger = logging.getLogger("laura.library.standard_search.service")
 
 
-def suggest(query: str, search_type: str = "all") -> list[dict]:
+from app.library.common.reshapers import reshape_scene, reshape_performer, reshape_studio
+
+async def find_and_enrich_scene(title: str, hash: Optional[str] = None) -> Optional[dict]:
+    # 1. Try local cache by hash first
+    if hash:
+        local = local_repo.enrich_by_hashes([hash])
+        if hash.lower() in local:
+            return reshape_scene(local[hash.lower()])
+
+    # 2. Try live search on StashDB
+    try:
+        # Search by hash if available, otherwise by title
+        if hash:
+            live = await stashdb_live.enrich_by_hashes([hash])
+            if hash.lower() in live:
+                data = live[hash.lower()]
+                # enrich_by_hashes already reshapes and handles caching
+                return data
+
+        # Fallback to title search
+        search_results = await stashdb_live.search_scenes(title, limit=1)
+        if search_results:
+            scene_id = search_results[0]["id"]
+            # Fetch full scene details
+            resp = await stashdb_live.get_scene(scene_id)
+            full_scene = (resp.get("data") or {}).get("findScene")
+            if full_scene:
+                return reshape_scene(full_scene)
+    except Exception as e:
+        logger.warning("find_and_enrich_error", extra={"title": title, "hash": hash, "error": str(e)})
+
+    return None
+
+
+async def suggest(query: str, search_type: str = "all") -> list[dict]:
     results = []
     types_to_search = ["performer", "studio", "scene"] if search_type == "all" else [search_type]
 
@@ -20,12 +55,13 @@ def suggest(query: str, search_type: str = "all") -> list[dict]:
                 local = local_repo.suggest_performers(query)
                 if local:
                     for p in local:
+                        reshaped = reshape_performer(p)
                         results.append({
-                            "id": p["id"], "name": p["name"],
-                            "type": "performer", "image_url": p.get("image_url"),
+                            "id": reshaped["id"], "name": reshaped["name"],
+                            "type": "performer", "image_url": reshaped.get("image_path"),
                         })
                 else:
-                    live = stashdb_live.suggest(query, "performer")
+                    live = await stashdb_live.suggest(query, "performer")
                     results.extend(live)
                     _cache_live_results("performer", live)
 
@@ -33,12 +69,13 @@ def suggest(query: str, search_type: str = "all") -> list[dict]:
                 local = local_repo.suggest_studios(query)
                 if local:
                     for s in local:
+                        reshaped = reshape_studio(s)
                         results.append({
-                            "id": s["id"], "name": s["name"],
-                            "type": "studio", "image_url": s.get("image_url"),
+                            "id": reshaped["id"], "name": reshaped["name"],
+                            "type": "studio", "image_url": reshaped.get("image_path"),
                         })
                 else:
-                    live = stashdb_live.suggest(query, "studio")
+                    live = await stashdb_live.suggest(query, "studio")
                     results.extend(live)
                     _cache_live_results("studio", live)
 
@@ -46,13 +83,14 @@ def suggest(query: str, search_type: str = "all") -> list[dict]:
                 local = local_repo.suggest_scenes(query)
                 if local:
                     for s in local:
+                        reshaped = reshape_scene(s)
                         results.append({
-                            "id": s["id"], "name": s["title"],
-                            "type": "scene", "image_url": s.get("images", [None])[0],
-                            "studio_name": s.get("studio_name"),
+                            "id": reshaped["id"], "name": reshaped["title"],
+                            "type": "scene", "image_url": (reshaped.get("paths") or {}).get("screenshot"),
+                            "studio_name": (reshaped.get("studio") or {}).get("name"),
                         })
                 else:
-                    live = stashdb_live.suggest(query, "scene")
+                    live = await stashdb_live.suggest(query, "scene")
                     results.extend(live)
                     _cache_live_results("scene", live)
         except Exception as e:
@@ -62,47 +100,67 @@ def suggest(query: str, search_type: str = "all") -> list[dict]:
     return results
 
 
-def enrich_by_hashes(info_hashes: list[str]) -> dict[str, dict]:
-    local = local_repo.enrich_by_hashes(info_hashes)
-    missing = [h for h in info_hashes if h not in local]
+async def enrich_by_hashes(info_hashes: list[str]) -> dict[str, dict]:
+    # Lowercase all input hashes for consistent lookup
+    lookup_hashes = [h.lower() for h in info_hashes if h]
+    if not lookup_hashes:
+        return {}
+
+    local = local_repo.enrich_by_hashes(lookup_hashes)
+    # The repository returns lowercased keys, but let's be safe
+    reshaped_local = {str(h).lower(): reshape_scene(data) for h, data in local.items()}
+    
+    missing = [h for h in lookup_hashes if h not in reshaped_local]
     if missing:
         try:
-            live = stashdb_live.enrich_by_hashes(missing)
+            # StashDB live also expects list of strings
+            live = await stashdb_live.enrich_by_hashes(missing)
             if live:
                 db = SessionLocal()
                 try:
                     ts = TypesenseClient()
                     for h, data in live.items():
-                        local[h] = data
+                        h_lower = str(h).lower()
+                        reshaped_local[h_lower] = reshape_scene(data)
+                        
+                        # Cache the raw data
+                        imgs = data.get("images", [])
+                        performers = data.get("performers", []) or []
+                        studio = data.get("studio", {}) or {}
+                        tags = data.get("tags", []) or []
+                        
                         db.merge(StashDBSceneCache(
                             stashdb_id=data.get("id"),
                             title=data.get("title"),
                             details=data.get("details"),
                             release_date=data.get("release_date"),
-                            duration=(data.get("file") or {}).get("duration"),
-                            studio_name=(data.get("studio") or {}).get("name"),
-                            performer_names=[p.get("name") for p in data.get("performers", [])],
-                            tags=[t.get("name") for t in data.get("tags", [])],
-                            images=[(data.get("paths") or {}).get("screenshot")] if (data.get("paths") or {}).get("screenshot") else [],
+                            duration=data.get("duration"),
+                            studio_name=studio.get("name"),
+                            studio_id=studio.get("id"),
+                            performer_names=[p.get("performer", {}).get("name") for p in performers if p.get("performer")],
+                            performer_ids=[p.get("performer", {}).get("id") for p in performers if p.get("performer")],
+                            tags=[t.get("name") for t in tags if t.get("name")],
+                            images=[i.get("url") for i in imgs if i.get("url")],
                             raw_json=data,
                         ))
+                        
                         ts.upsert("stashdb_scenes", {
                             "id": data.get("id"),
                             "title": data.get("title", ""),
                             "details": data.get("details"),
                             "release_date": data.get("release_date"),
-                            "duration": (data.get("file") or {}).get("duration"),
-                            "studio_name": (data.get("studio") or {}).get("name"),
-                            "performer_names": [p.get("name") for p in data.get("performers", [])],
-                            "tags": [t.get("name") for t in data.get("tags", [])],
-                            "images": [(data.get("paths") or {}).get("screenshot")] if (data.get("paths") or {}).get("screenshot") else [],
+                            "duration": data.get("duration"),
+                            "studio_name": studio.get("name"),
+                            "performer_names": [p.get("performer", {}).get("name") for p in performers if p.get("performer")],
+                            "tags": [t.get("name") for t in tags if t.get("name")],
+                            "images": [i.get("url") for i in imgs if i.get("url")],
                         })
                     db.commit()
                 finally:
                     db.close()
         except Exception as e:
             logger.warning("enrich_live_fallback_error", extra={"error": str(e)})
-    return local
+    return reshaped_local
 
 
 def _cache_live_results(entity_type: str, results: list[dict]):

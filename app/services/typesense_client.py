@@ -60,6 +60,18 @@ class TypesenseClient:
         if not hashes:
             return []
         qb = query_by or ["title"]
-        params = {"q": "*", "query_by": ",".join(qb), "filter_by": build_hash_filter(hashes), "per_page": min(len(hashes), 250)}
-        resp = self.client.collections[collection].documents.search(params)
-        return [h["document"] for h in resp.get("hits", [])]
+        # Typesense search is HTTP GET with filter_by in query string.
+        # Each hash is 40 hex chars; a 4000-char URL ~allows ~80 per chunk.
+        # Chunk to avoid "query string exceeds max allowed length" errors.
+        chunk_size = 80
+        all_hits: list[dict] = []
+        for i in range(0, len(hashes), chunk_size):
+            chunk = hashes[i:i + chunk_size]
+            params = {"q": "*", "query_by": ",".join(qb), "filter_by": build_hash_filter(chunk), "per_page": len(chunk)}
+            try:
+                resp = self.client.collections[collection].documents.search(params)
+                all_hits.extend(h["document"] for h in resp.get("hits", []))
+            except Exception as e:
+                logger = __import__("logging").getLogger("laura.services.typesense_client")
+                logger.warning("typesense_search_hashes_chunk_failed", extra={"chunk": i, "error": str(e)})
+        return all_hits

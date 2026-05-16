@@ -1,6 +1,7 @@
 import re
-from fastapi import APIRouter, HTTPException, Query
+from fastapi import APIRouter, HTTPException, Query, Depends
 from app.services import stash as stash_service
+from app.auth.dependencies import get_current_user
 
 router = APIRouter(prefix="/stash", tags=["stash"])
 
@@ -20,6 +21,30 @@ def _normalize_paths(obj):
         for item in obj:
             _normalize_paths(item)
     return obj
+
+
+@router.get("/overview")
+def get_overview(user: dict = Depends(get_current_user)):
+    try:
+        data = stash_service.overview()
+        d = data.get("data", {})
+        stats = d.get("stats", {}) if d.get("stats") else {}
+        return {
+            "stats": {
+                "scene_count": stats.get("scene_count", 0),
+                "performer_count": stats.get("performer_count", 0),
+                "studio_count": stats.get("studio_count", 0),
+                "scenes_size": stats.get("scenes_size", 0),
+            },
+            "job_queue": d.get("jobQueue") or [],
+            "scenes_with_studio": (d.get("scenes_with_studio") or {}).get("count", 0),
+            "scenes_without_studio": (d.get("scenes_without_studio") or {}).get("count", 0),
+            "scenes_organized": (d.get("scenes_organized") or {}).get("count", 0),
+            "scenes_with_tags": (d.get("scenes_with_tags") or {}).get("count", 0),
+            "scenes_without_tags": (d.get("scenes_without_tags") or {}).get("count", 0),
+        }
+    except Exception as e:
+        raise HTTPException(status_code=502, detail=str(e))
 
 
 @router.get("/stats")

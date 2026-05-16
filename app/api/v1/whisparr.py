@@ -1,5 +1,6 @@
 from fastapi import APIRouter, HTTPException, Query, Request
 from app.services import whisparr, torbox, stash
+from app.services.prowlarr_results import normalize_result
 
 router = APIRouter(prefix="/whisparr", tags=["whisparr"])
 
@@ -50,14 +51,28 @@ async def whisparr_webhook(request: Request):
 
     if event_type == "Grab":
         release = payload.get("release", {})
-        magnet = release.get("magnetUrl", "")
-        if magnet:
-            try:
-                torbox.create_torrent(magnet, seed=1)
-                return {"status": "ok", "message": "Added to TorBox"}
-            except Exception as e:
-                return {"status": "error", "message": f"TorBox add failed: {e}"}
-        return {"status": "skipped", "message": "No magnet URL in payload"}
+        normalized = normalize_result({
+            "title": release.get("title") or payload.get("movie", {}).get("title", ""),
+            "magnetUrl": release.get("magnetUrl"),
+            "magnetUri": release.get("magnetUri"),
+            "infoHash": release.get("infoHash"),
+            "downloadUrl": release.get("downloadUrl"),
+            "downloadId": release.get("downloadId"),
+        })
+        try:
+            if normalized.get("magnetUrl"):
+                torbox.create_torrent(normalized["magnetUrl"], seed=1)
+                return {"status": "ok", "message": "Added to TorBox", "link_type": normalized.get("linkType")}
+            if normalized.get("downloadUrl"):
+                torbox.create_torrent_from_download_url(
+                    normalized["downloadUrl"],
+                    seed=1,
+                    name=normalized.get("title") or payload.get("movie", {}).get("title", "")
+                )
+                return {"status": "ok", "message": "Added to TorBox via torrent file", "link_type": normalized.get("linkType")}
+            return {"status": "skipped", "message": "No magnet, infoHash, or torrent URL in payload"}
+        except Exception as e:
+            return {"status": "error", "message": f"TorBox add failed: {e}"}
 
     if event_type in ("Download", "Import"):
         try:

@@ -1,4 +1,5 @@
 import logging
+from typing import Optional
 from fastapi import APIRouter, Query, HTTPException, Depends
 from sqlalchemy.orm import Session
 from app.database import get_db
@@ -18,54 +19,33 @@ router = APIRouter(prefix="/stashdb", tags=["stashdb"])
 
 
 @router.get("/suggest")
-def suggest(
+async def suggest(
     q: str = Query(..., min_length=1, max_length=200),
-    type: str = Query("all", regex="^(performer|studio|scene|all)$"),
+    type: str = Query("all", pattern="^(performer|studio|scene|all)$"),
 ):
     try:
-        results = std_search_service.suggest(q, search_type=type)
+        results = await std_search_service.suggest(q, search_type=type)
         return {"results": results}
     except Exception as e:
         return {"results": [], "error": str(e)}
 
 
+from app.library.common.reshapers import (
+    reshape_scene as _reshape_raw_scene,
+    reshape_performer as _reshape_raw_performer,
+    reshape_studio as _reshape_raw_studio,
+)
+
 def _reshape_performer(doc: dict) -> dict:
-    return {
-        "id": doc["id"],
-        "name": doc.get("name", ""),
-        "image_path": doc.get("image_url"),
-        "scene_count": doc.get("scene_count", 0),
-        "aliases": doc.get("aliases"),
-        "gender": doc.get("gender"),
-        "details": doc.get("details"),
-    }
+    return _reshape_raw_performer(doc)
 
 
 def _reshape_studio(doc: dict) -> dict:
-    return {
-        "id": doc["id"],
-        "name": doc.get("name", ""),
-        "image_path": doc.get("image_url"),
-        "scene_count": doc.get("scene_count", 0),
-        "details": doc.get("details"),
-    }
+    return _reshape_raw_studio(doc)
 
 
 def _reshape_scene(doc: dict) -> dict:
-    images = doc.get("images") or []
-    tags = doc.get("tags") or []
-    performer_names = doc.get("performer_names") or []
-    return {
-        "id": doc["id"],
-        "title": doc.get("title", ""),
-        "date": doc.get("release_date"),
-        "details": doc.get("details"),
-        "paths": {"screenshot": images[0]} if images else None,
-        "file": {"duration": doc.get("duration")} if doc.get("duration") else None,
-        "studio": {"name": doc.get("studio_name")} if doc.get("studio_name") else None,
-        "performers": [{"name": n} for n in performer_names],
-        "tags": [{"name": t} for t in tags],
-    }
+    return _reshape_raw_scene(doc)
 
 
 INDEX_MAP = {
@@ -75,18 +55,45 @@ INDEX_MAP = {
 }
 
 
+import json
+
 def _try_pg(entity_type: str, id: str, db: Session) -> dict | None:
     try:
         if entity_type == "performer":
             row = db.query(StashDBPerformerCache).filter(StashDBPerformerCache.stashdb_id == id).first()
+            if row and row.raw_json:
+                data = json.loads(row.raw_json) if isinstance(row.raw_json, str) else row.raw_json
+                res = _reshape_raw_performer(data)
+                
+                # Optimized JSON lookup
+                scenes = db.query(StashDBSceneCache).filter(StashDBSceneCache.performer_ids.contains(id)).limit(50).all()
+                res["scenes"] = []
+                for sc in scenes:
+                    sc_data = json.loads(sc.raw_json) if isinstance(sc.raw_json, str) else sc.raw_json
+                    res["scenes"].append(_reshape_raw_scene(sc_data))
+                return res
+
         elif entity_type == "studio":
             row = db.query(StashDBStudioCache).filter(StashDBStudioCache.stashdb_id == id).first()
+            if row and row.raw_json:
+                data = json.loads(row.raw_json) if isinstance(row.raw_json, str) else row.raw_json
+                res = _reshape_raw_studio(data)
+                
+                scenes = db.query(StashDBSceneCache).filter(StashDBSceneCache.studio_id == id).limit(50).all()
+                res["scenes"] = []
+                for sc in scenes:
+                    sc_data = json.loads(sc.raw_json) if isinstance(sc.raw_json, str) else sc.raw_json
+                    res["scenes"].append(_reshape_raw_scene(sc_data))
+                return res
+
         else:
             row = db.query(StashDBSceneCache).filter(StashDBSceneCache.stashdb_id == id).first()
-        if row and row.raw_json:
-            return row.raw_json
+            if row and row.raw_json:
+                data = json.loads(row.raw_json) if isinstance(row.raw_json, str) else row.raw_json
+                return _reshape_raw_scene(data)
         return None
-    except Exception:
+    except Exception as e:
+        logger.error(f"try_pg_error: {str(e)}")
         return None
 
 
@@ -101,18 +108,18 @@ def _try_typesense(entity_type: str, id: str) -> dict | None:
     return reshape(doc)
 
 
-def _try_live(entity_type: str, id: str) -> dict | None:
-    return _try_stashdb_live(entity_type, id)
+async def _try_live(entity_type: str, id: str) -> dict | None:
+    return await _try_stashdb_live(entity_type, id)
 
 
-def _resolve_entity(entity_type: str, id: str, db: Session) -> dict | None:
+async def _resolve_entity(entity_type: str, id: str, db: Session) -> dict | None:
     result = _try_pg(entity_type, id, db)
     if result:
         return result
     result = _try_typesense(entity_type, id)
     if result:
         return result
-    result = _try_live(entity_type, id)
+    result = await _try_live(entity_type, id)
     if result:
         return result
     return None
@@ -133,72 +140,61 @@ def _try_local_stash(entity_type: str, id: str) -> dict | None:
         return None
 
 
-def _try_stashdb_live(entity_type: str, id: str) -> dict | None:
+async def _try_stashdb_live(entity_type: str, id: str) -> dict | None:
     try:
         if entity_type == "performer":
-            data = stashdb_live.get_performer(id)
+            data = await stashdb_live.get_performer(id)
             d = data.get("data") or {}
             p = d.get("findPerformer")
             if not p:
                 return None
-            imgs = p.get("images") or []
-            return {
-                "id": p["id"],
-                "name": p.get("name", ""),
-                "image_path": imgs[0]["url"] if imgs else None,
-                "scene_count": 0,
-                "aliases": p.get("aliases"),
-                "gender": p.get("gender"),
-            }
+            return _reshape_raw_performer(p)
         elif entity_type == "studio":
-            data = stashdb_live.get_studio(id)
+            data = await stashdb_live.get_studio(id)
             d = data.get("data") or {}
             s = d.get("findStudio")
             if not s:
                 return None
-            imgs = s.get("images") or []
-            return {
-                "id": s["id"],
-                "name": s.get("name", ""),
-                "image_path": imgs[0]["url"] if imgs else None,
-                "scene_count": 0,
-            }
+            return _reshape_raw_studio(s)
         else:
-            data = stashdb_live.get_scene(id)
+            data = await stashdb_live.get_scene(id)
             d = data.get("data") or {}
             sc = d.get("findScene")
             if not sc:
                 return None
-            imgs = sc.get("images") or []
-            performers = sc.get("performers") or []
-            studio = sc.get("studio") or {}
-            tags = sc.get("tags") or []
-            return {
-                "id": sc["id"],
-                "title": sc.get("title", ""),
-                "date": sc.get("release_date"),
-                "details": sc.get("details"),
-                "file": {"duration": sc.get("duration")} if sc.get("duration") else None,
-                "paths": {"screenshot": imgs[0]["url"]} if imgs else None,
-                "studio": {"name": studio.get("name")} if studio.get("name") else None,
-                "performers": [
-                    {"name": p.get("performer", {}).get("name")}
-                    for p in performers if p.get("performer")
-                ],
-                "tags": [{"name": t.get("name")} for t in tags if t.get("name")],
-            }
+            return _reshape_raw_scene(sc)
     except Exception as e:
         logger.warning("stashdb_live_entity_error", extra={"type": entity_type, "id": id, "error": str(e)})
         return None
 
 
+from pydantic import BaseModel
+
+class ResolveRequest(BaseModel):
+    title: str
+    info_hash: Optional[str] = None
+
+@router.post("/resolve")
+async def resolve_scene(req: ResolveRequest):
+    try:
+        result = await std_search_service.find_and_enrich_scene(req.title, req.info_hash)
+        if result:
+            return result
+        raise HTTPException(status_code=404, detail="Scene could not be resolved on StashDB")
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"resolve_error: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 @router.get("/entity")
-def get_entity(
+async def get_entity(
     type: str = Query(..., regex="^(performer|studio|scene)$"),
     id: str = Query(..., min_length=1),
     db: Session = Depends(get_db),
 ):
-    result = _resolve_entity(type, id, db)
+    result = await _resolve_entity(type, id, db)
     if result:
         return result
 

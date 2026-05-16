@@ -1,3 +1,4 @@
+import httpx
 from fastapi import APIRouter, HTTPException, Query, Request
 from app.services import prowlarr
 
@@ -56,9 +57,20 @@ def get_status():
 
 
 @router.get("/search")
-def search_indexers(query: str = Query(..., min_length=1), indexer_ids: str = Query(None)):
+def search_indexers(query: str = Query(..., min_length=1, max_length=500), indexer_ids: str = Query(None)):
     try:
         ids = [int(x) for x in indexer_ids.split(",") if x.strip().isdigit()] if indexer_ids else None
-        return prowlarr.search(query, ids)
+        return prowlarr.search(query=query, indexer_ids=ids)
+    except httpx.HTTPStatusError as e:
+        detail = "Prowlarr search failed"
+        try:
+            body = e.response.text
+            if e.response.status_code == 400 and "unavailable" in body.lower():
+                detail = "Selected indexers are unavailable"
+            elif body:
+                detail = body
+        except Exception:
+            pass
+        raise HTTPException(status_code=e.response.status_code or 502, detail=detail)
     except Exception as e:
         raise HTTPException(status_code=502, detail=str(e))

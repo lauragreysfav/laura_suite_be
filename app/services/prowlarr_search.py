@@ -21,14 +21,42 @@ def classify_xxx_type(indexer_id: int, indexer_name: str = "") -> str:
 
 
 def dedup_results(results: list[dict]) -> list[dict]:
-    seen = set()
-    unique = []
+    # Group results by infoHash
+    groups: dict[str, list[dict]] = {}
+    no_hash_results = []
+
     for r in results:
-        ih = r.get("infoHash", "")
-        if ih and ih not in seen:
-            seen.add(ih)
-            unique.append(r)
-    return unique
+        ih = r.get("infoHash", "").lower()
+        if not ih:
+            no_hash_results.append(r)
+            continue
+        if ih not in groups:
+            groups[ih] = []
+        groups[ih].append(r)
+
+    unique = []
+    for ih, group in groups.items():
+        # Sort each group by seeders (highest first) to find the best primary source
+        group.sort(key=lambda x: x.get("seeders") or 0, reverse=True)
+        primary = group[0]
+        
+        # Attach all other sources to the primary so the user can see them
+        if len(group) > 1:
+            primary["alternateSources"] = [
+                {
+                    "indexer": r.get("indexer"),
+                    "seeders": r.get("seeders") or 0,
+                    "leechers": r.get("leechers") or 0
+                }
+                for r in group[1:]
+            ]
+        else:
+            primary["alternateSources"] = []
+            
+        unique.append(primary)
+        
+    # Add items that didn't have hashes back in (keep them all)
+    return unique + no_hash_results
 
 
 def rank_results(results: list[dict]) -> list[dict]:
@@ -39,7 +67,14 @@ def rank_results(results: list[dict]) -> list[dict]:
         q_score = QUALITY_MAP.get(quality, 0)
         seeders = r.get("seeders") or 0
         leechers = r.get("leechers") or 0
-        return q_score + min(seeders, 200) * 0.3 + min(leechers, 50) * 0.1
+        
+        # PENALTY: 0 seeders makes a file very low priority regardless of quality
+        if seeders == 0:
+            return -1000 + q_score
+            
+        # WEIGHTING: 1 seeder is worth a lot; high seeder counts (up to 500) give diminishing returns
+        # Resolution (q_score) is the secondary tie-breaker
+        return (min(seeders, 500) * 10) + q_score + min(leechers, 50) * 0.1
 
     return sorted(results, key=score, reverse=True)
 
@@ -73,4 +108,4 @@ async def stream_search(
 
     ranked = rank_results(unique)
 
-    return ranked[:200]
+    return ranked

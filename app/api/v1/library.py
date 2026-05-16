@@ -1,4 +1,5 @@
 from fastapi import APIRouter, HTTPException, Query, Depends, Body
+from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 from app.services import stash, torbox, prowlarr, stashdb_public
 from app.database import get_db
@@ -9,10 +10,17 @@ from datetime import datetime
 router = APIRouter(prefix="/library", tags=["library"])
 
 
+class ManualAddRequest(BaseModel):
+    info_hash: str = Field(..., min_length=1)
+    magnet: str | None = None
+    download_url: str | None = None
+    title: str = Field(..., min_length=1)
+
+
 @router.get("/manual-search")
 def manual_search(query: str, tag: Optional[str] = None):
     try:
-        results = prowlarr.search(query, tag)
+        results = prowlarr.search(query=query, tag=tag)
         enriched = []
         for r in results:
             h = r.get("infoHash")
@@ -44,6 +52,7 @@ def manual_search(query: str, tag: Optional[str] = None):
                 "infoHash": h,
                 "magnetUrl": r.get("magnetUrl"),
                 "downloadUrl": r.get("downloadUrl"),
+                "linkType": r.get("linkType"),
                 "is_local": local.get("exists", False),
                 "local_path": local.get("path"),
                 "stashdb_meta": sdb_scene
@@ -54,27 +63,33 @@ def manual_search(query: str, tag: Optional[str] = None):
 
 
 @router.post("/manual-add")
-def manual_add(info_hash: str, magnet: str, title: str, db: Session = Depends(get_db)):
+def manual_add(body: ManualAddRequest, db: Session = Depends(get_db)):
     try:
-        # 1. Send to TorBox
-        ok = torbox.add_magnet(magnet)
-        if not ok:
-            raise Exception("Failed to add to TorBox")
+        if body.magnet:
+            torbox.add_magnet(body.magnet)
+        elif body.download_url:
+            torbox.create_torrent_from_download_url(body.download_url, seed=1, name=body.title)
+        else:
+            raise Exception("No magnet or download_url provided")
 
         # 2. Log in DB
-        torrent = db.query(LibraryTorrent).filter(LibraryTorrent.info_hash == info_hash).first()
+        torrent = db.query(LibraryTorrent).filter(LibraryTorrent.info_hash == body.info_hash).first()
         if not torrent:
             torrent = LibraryTorrent(
-                info_hash=info_hash,
-                title=title,
-                magnet=magnet,
+                info_hash=body.info_hash,
+                title=body.title,
+                magnet=body.magnet,
+                torrent_url=body.download_url,
                 is_cached_torbox=True,
                 added_to_torbox_at=datetime.utcnow()
             )
             db.add(torrent)
+            db.flush()
         else:
             torrent.is_cached_torbox = True
             torrent.added_to_torbox_at = datetime.utcnow()
+            torrent.magnet = body.magnet or torrent.magnet
+            torrent.torrent_url = body.download_url or torrent.torrent_url
 
         action = LibraryAction(
             torrent_id=torrent.id,
@@ -151,7 +166,9 @@ def get_bulk_job_status(job_id: int, db: Session = Depends(get_db)):
             "is_megapack": t.is_megapack,
             "is_local": t.is_local_stash,
             "local_path": t.local_stash_path,
-            "magnetUrl": t.magnet
+            "magnetUrl": t.magnet,
+            "downloadUrl": t.torrent_url,
+            "linkType": "torrent-file" if t.torrent_url and not t.magnet else "direct" if t.magnet else "unavailable",
         } for t in results]
 
     return {

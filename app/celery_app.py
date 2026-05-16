@@ -29,6 +29,22 @@ celery_app.conf.update(
             "task": "app.tasks.library_search_tasks.prime_suggest_cache",
             "schedule": 21600.0,
         },
+        "check-stalled-torbox-downloads": {
+            "task": "app.tasks.torbox_tasks.check_stalled_downloads",
+            "schedule": 300.0,
+        },
+        "check-torbox-completions": {
+            "task": "app.tasks.torbox_sync_tasks.check_torbox_completions",
+            "schedule": 120.0,
+        },
+        "scan-lauramedia-every-10min": {
+            "task": "app.tasks.library_scan_tasks.scan_lauramedia",
+            "schedule": 600.0,
+        },
+        "reidentify-unmatched-weekly": {
+            "task": "app.tasks.library_scan_tasks.reidentify_unmatched_scenes",
+            "schedule": 604800.0,
+        },
     },
 )
 
@@ -37,3 +53,6 @@ import app.tasks.search_tasks
 import app.tasks.tracker_tasks
 import app.tasks.email_tasks
 import app.tasks.library_search_tasks
+import app.tasks.torbox_tasks
+import app.tasks.torbox_sync_tasks
+import app.tasks.library_scan_tasks

@@ -1,1 +1,0 @@
-"""Async StashDB ingestion pipeline."""

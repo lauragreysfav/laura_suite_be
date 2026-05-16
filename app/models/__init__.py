@@ -168,6 +168,7 @@ class StandardSearchHistory(Base):
     user_id = Column(String(255), nullable=False, index=True)
     query = Column(String(500), nullable=False)
     filters = Column(JSON)
+    results = Column(JSON)
     result_count = Column(Integer, default=0)
     status = Column(String(50), default="running")
     error = Column(Text)
@@ -220,3 +221,68 @@ class LibraryAction(Base):
     torrent_id = Column(Integer, ForeignKey("library_torrents.id"), nullable=False)
     action_type = Column(String(50), nullable=False)  # sent, dl, viewed
     created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+
+class DeletedTorrent(Base):
+    __tablename__ = "deleted_torrents"
+    id = Column(Integer, primary_key=True)
+    info_hash = Column(String(64), nullable=False, index=True)
+    title = Column(String(500), nullable=False)
+    magnet = Column(Text, nullable=True)
+    size = Column(String(50), nullable=True)
+    reason = Column(String(50), default="auto")  # auto or manual
+    deleted_at = Column(DateTime(timezone=True), server_default=func.now())
+    restored_at = Column(DateTime(timezone=True), nullable=True)
+
+
+class CronJobLog(Base):
+    __tablename__ = "cron_job_logs"
+    id = Column(Integer, primary_key=True)
+    job_name = Column(String(100), nullable=False)
+    checked_count = Column(Integer, default=0)
+    deleted_count = Column(Integer, default=0)
+    deleted_items = Column(JSON, nullable=True)
+    duration_ms = Column(Integer, default=0)
+    ran_at = Column(DateTime(timezone=True), server_default=func.now())
+
+
+class AutoDeleteExclude(Base):
+    __tablename__ = "auto_delete_excludes"
+    id = Column(Integer, primary_key=True)
+    info_hash = Column(String(64), unique=True, nullable=False, index=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+
+class TorboxDownload(Base):
+    __tablename__ = "torbox_downloads"
+    id = Column(Integer, primary_key=True)
+    info_hash = Column(String(64), nullable=False, index=True)
+    name = Column(String(500), nullable=False)
+    size = Column(String(50), nullable=True)
+    torbox_id = Column(Integer, nullable=True)
+    stash_scanned = Column(Boolean, default=False)
+    stash_identified = Column(Boolean, default=False)
+    stash_scene_id = Column(Integer, nullable=True)
+    stash_scene_name = Column(String(500), nullable=True)
+    detected_at = Column(DateTime(timezone=True), server_default=func.now())
+    processed_at = Column(DateTime(timezone=True), nullable=True)
+
+
+class EmailLog(Base):
+    __tablename__ = "email_logs"
+    id = Column(Integer, primary_key=True)
+    to_addr = Column(String(255), nullable=False)
+    subject = Column(String(500), nullable=False)
+    status = Column(String(50), default="sent")
+    related_type = Column(String(50))
+    related_name = Column(String(500))
+    error_message = Column(Text)
+    sent_at = Column(DateTime(timezone=True), server_default=func.now())
+
+
+class IngestCheckpoint(Base):
+    __tablename__ = "ingest_checkpoints"
+    id = Column(Integer, primary_key=True)
+    key = Column(String(255), unique=True, nullable=False)
+    data = Column(JSON, nullable=False)
+    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())

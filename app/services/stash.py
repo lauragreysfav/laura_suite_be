@@ -42,9 +42,154 @@ def trigger_scan(paths: list[str] = None) -> dict:
     return _query(q, variables)
 
 
-def trigger_identify() -> dict:
-    q = "mutation { metadataIdentify(input: {}) { queued } }"
+def trigger_identify(
+    stash_box_endpoint: str = "https://stashdb.org/graphql",
+    paths: list[str] = None,
+    set_cover_image: bool = True,
+    include_male_performers: bool = True,
+    skip_single_name_performers: bool = False,
+    set_organized: bool = False,
+) -> dict:
+    q = """
+    mutation MetadataIdentify($input: IdentifyMetadataInput!) {
+      metadataIdentify(input: $input)
+    }
+    """
+    sources = [{
+        "source": {"stash_box_endpoint": stash_box_endpoint},
+        "options": {
+            "setCoverImage": set_cover_image,
+            "includeMalePerformers": include_male_performers,
+            "skipSingleNamePerformers": skip_single_name_performers,
+        },
+    }]
+    variables = {
+        "input": {
+            "sources": sources,
+            "options": {"setCoverImage": set_cover_image, "setOrganized": set_organized},
+        }
+    }
+    if paths:
+        variables["input"]["paths"] = paths
+    return _query(q, variables)
+
+
+def trigger_generate(
+    scene_ids: list[int] = None,
+    previews: bool = True,
+    sprites: bool = True,
+    phashes: bool = True,
+    markers: bool = True,
+    marker_screenshots: bool = True,
+    covers: bool = True,
+    image_thumbnails: bool = True,
+    transcodes: bool = False,
+    clip_previews: bool = True,
+    image_previews: bool = True,
+    image_phashes: bool = True,
+    interactive_heatmaps: bool = False,
+    overwrite: bool = False,
+) -> dict:
+    q = """
+    mutation MetadataGenerate($input: GenerateMetadataInput!) {
+      metadataGenerate(input: $input)
+    }
+    """
+    variables = {
+        "input": {
+            "previews": previews,
+            "sprites": sprites,
+            "phashes": phashes,
+            "markers": markers,
+            "markerScreenshots": marker_screenshots,
+            "covers": covers,
+            "imageThumbnails": image_thumbnails,
+            "transcodes": transcodes,
+            "clipPreviews": clip_previews,
+            "imagePreviews": image_previews,
+            "imagePhashes": image_phashes,
+            "interactiveHeatmapsSpeeds": interactive_heatmaps,
+            "overwrite": overwrite,
+        }
+    }
+    if scene_ids:
+        variables["input"]["sceneIDs"] = scene_ids
+    return _query(q, variables)
+
+
+def trigger_auto_tag(paths: list[str] = None) -> dict:
+    q = """
+    mutation MetadataAutoTag($input: AutoTagMetadataInput!) {
+      metadataAutoTag(input: $input)
+    }
+    """
+    variables = {"input": {}}
+    if paths:
+        variables["input"]["paths"] = paths
+    return _query(q, variables)
+
+
+def job_queue() -> list[dict]:
+    q = """
+    query {
+      jobQueue {
+        id
+        status
+        description
+        subTasks
+      }
+    }
+    """
+    res = _query(q)
+    return (res.get("data") or {}).get("jobQueue") or []
+
+
+def wait_for_jobs(job_id_prefix: str = None, timeout: int = 300, poll_interval: int = 5) -> bool:
+    """Poll stash job queue until no running jobs match the prefix."""
+    import time
+    deadline = time.time() + timeout
+    while time.time() < deadline:
+        jobs = job_queue()
+        running = [j for j in jobs if j.get("status") in ("RUNNING", "READY")]
+        if not running:
+            return True
+        time.sleep(poll_interval)
+    return False
+
+
+def overview() -> dict:
+    """Return combined dashboard data: stats, job queue, and scene counts by status."""
+    q = """
+    query Overview {
+      stats { scene_count performer_count studio_count scenes_size }
+      jobQueue { id status description subTasks }
+      scenes_with_studio: findScenes(scene_filter: { studios: { modifier: NOT_NULL } }) { count }
+      scenes_without_studio: findScenes(scene_filter: { studios: { modifier: IS_NULL } }) { count }
+      scenes_organized: findScenes(scene_filter: { organized: true }) { count }
+      scenes_with_tags: findScenes(scene_filter: { tags: { modifier: NOT_NULL } }) { count }
+      scenes_without_tags: findScenes(scene_filter: { tags: { modifier: IS_NULL } }) { count }
+    }
+    """
     return _query(q)
+
+
+def find_scene_by_hash(info_hash: str) -> dict | None:
+    q = """
+    query FindSceneByHash($hash: String!) {
+      findScenes(filter: {q: $hash}) {
+        scenes {
+          id
+          title
+          files { path }
+        }
+      }
+    }
+    """
+    res = _query(q, {"hash": info_hash})
+    scenes = res.get("data", {}).get("findScenes", {}).get("scenes", [])
+    if scenes:
+        return scenes[0]
+    return None
 
 
 def stats() -> dict:

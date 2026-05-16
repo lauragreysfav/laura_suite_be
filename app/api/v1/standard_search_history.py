@@ -1,5 +1,5 @@
 import logging
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, Query, HTTPException
 from sqlalchemy.orm import Session
 from app.database import get_db
 from app.models import StandardSearchHistory
@@ -22,9 +22,24 @@ def get_history(
             "id": h.id,
             "query": h.query,
             "filters": h.filters,
+            "results": h.results,
             "result_count": h.result_count,
             "status": h.status,
             "created_at": h.created_at.isoformat() if h.created_at else None,
         }
         for h in rows
     ]
+
+
+@router.delete("/history/{history_id}")
+def delete_history_item(
+    history_id: int,
+    user: dict = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    item = db.query(StandardSearchHistory).filter_by(id=history_id, user_id=user["sub"]).first()
+    if not item:
+        raise HTTPException(status_code=404, detail="Item not found")
+    db.delete(item)
+    db.commit()
+    return {"status": "ok"}

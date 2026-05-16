@@ -18,12 +18,12 @@ def get_the_past(job_id: int, query: str, indexer_ids: list[int] = None):
             return
 
         # Search exact query
-        results = prowlarr.search(query, indexer_ids)
+        results = prowlarr.search(query=query, indexer_ids=indexer_ids)
         
         # Search megapacks
         for kw in ["megapack", "collection", "complete"]:
             try:
-                results.extend(prowlarr.search(f"{query} {kw}", indexer_ids))
+                results.extend(prowlarr.search(query=f"{query} {kw}", indexer_ids=indexer_ids))
             except:
                 continue
             
@@ -93,7 +93,7 @@ def search_megapacks(job_id: int, query: str, tag: str = None):
         results = []
         for kw in keywords:
             try:
-                results.extend(prowlarr.search(f"{query} {kw}", tag))
+                results.extend(prowlarr.search(query=f"{query} {kw}", tag=tag))
             except:
                 continue
 

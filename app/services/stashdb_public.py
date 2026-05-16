@@ -6,21 +6,24 @@ STASHDB_URL = "https://stashdb.org/graphql"
 logger = logging.getLogger("laura.services.stashdb_public")
 
 
-def _query(query: str, variables: dict = None) -> dict:
+async def _query(query: str, variables: dict = None) -> dict:
     headers = {"ApiKey": settings.stashdb_api_key} if settings.stashdb_api_key else {}
     try:
-        r = httpx.post(STASHDB_URL, json={"query": query, "variables": variables or {}}, headers=headers, timeout=15)
-        r.raise_for_status()
-        return r.json()
+        async with httpx.AsyncClient() as client:
+            r = await client.post(STASHDB_URL, json={"query": query, "variables": variables or {}}, headers=headers, timeout=15)
+            if r.status_code == 422:
+                logger.error(f"stashdb_validation_error: {r.text}")
+            r.raise_for_status()
+            return r.json()
     except httpx.HTTPStatusError as e:
-        logger.warning("stashdb_http_error", extra={"status": e.response.status_code, "body": str(e.response.text)[:300]})
+        logger.warning("stashdb_http_error", extra={"status": e.response.status_code, "body": str(e.response.text)[:500]})
         return {"data": None}
     except Exception as e:
         logger.warning("stashdb_query_error", extra={"error": str(e)})
         return {"data": None}
 
 
-def search_performers(query: str):
+async def search_performers(query: str):
     q = """
     query SearchPerformers($input: PerformerQueryInput!) {
       queryPerformers(input: $input) {
@@ -34,37 +37,45 @@ def search_performers(query: str):
       }
     }
     """
-    return _query(q, {"input": {"names": query, "page": 1, "per_page": 20}})
+    # Use 'name' instead of 'names' for StashDB criteria
+    return await _query(q, {"input": {"name": query, "page": 1, "per_page": 20}})
 
 
-def find_by_hash(info_hash: str):
+async def find_by_hash(info_hash: str):
+    # Optimized FindByHash query for Public StashDB
     q = """
-    query FindByHash($fp: FingerprintQueryInput!) {
-      findSceneByFingerprint(fingerprint: $fp) {
-        id
-        title
-        details
-        images { url }
-        studio { name }
-        performers { name }
+    query FindByHash($input: SceneQueryInput!) {
+      queryScenes(input: $input) {
+        scenes {
+          id
+          title
+          details
+          release_date
+          duration
+          images { url }
+          studio { id name }
+          performers { performer { id name } }
+        }
       }
     }
     """
-    for algo in ["SHA1", "SHA256", "MD5"]:
-        result = _query(q, {"fp": {"hash": info_hash, "algorithm": algo}})
-        d = result.get("data") or {}
-        scene = d.get("findSceneByFingerprint")
-        if scene:
-            return result
+    # Use standard 'fingerprints' criterion for Stash-Box
+    result = await _query(q, {"input": {"fingerprints": {"value": [info_hash], "modifier": "INCLUDES"}}})
+    d = result.get("data") or {}
+    scenes = (d.get("queryScenes") or {}).get("scenes")
+    
+    if scenes and isinstance(scenes, list) and len(scenes) > 0:
+        # Return in the format expected by the caller (simulating findSceneByFingerprint)
+        return {"data": {"findSceneByFingerprint": scenes[0]}}
     return {"data": None}
 
 
-def batch_find_by_hashes(info_hashes: list[str]):
+async def batch_find_by_hashes(info_hashes: list[str]):
     """Find scenes by multiple info hashes, called per-hash since GraphQL only supports single fingerprint lookup."""
     results = {}
     for h in info_hashes:
         try:
-            data = find_by_hash(h)
+            data = await find_by_hash(h)
             d = data.get("data") or {}
             scene = d.get("findSceneByFingerprint")
             if scene:
@@ -74,7 +85,7 @@ def batch_find_by_hashes(info_hashes: list[str]):
     return results
 
 
-def get_performer(performer_id: str):
+async def get_performer(performer_id: str):
     q = """
     query GetPerformer($id: ID!) {
       findPerformer(id: $id) {
@@ -82,15 +93,26 @@ def get_performer(performer_id: str):
         name
         aliases
         gender
+        birth_date
+        career_start_year
+        career_end_year
+        ethnicity
+        country
+        eye_color
+        hair_color
+        height
+        measurements
+        details
+        death_date
         urls { url type }
         images { url }
       }
     }
     """
-    return _query(q, {"id": performer_id})
+    return await _query(q, {"id": performer_id})
 
 
-def suggest(query: str, search_type: str = "all") -> list[dict]:
+async def suggest(query: str, search_type: str = "all") -> list[dict]:
     results = []
     types_to_search = ["performer", "studio", "scene"] if search_type == "all" else [search_type]
 
@@ -104,7 +126,8 @@ def suggest(query: str, search_type: str = "all") -> list[dict]:
                   }
                 }
                 """
-                data = _query(q, {"input": {"names": query, "page": 1, "per_page": 5}})
+                # Correct field 'name' for StashDB
+                data = await _query(q, {"input": {"name": query, "page": 1, "per_page": 5}})
                 d = data.get("data") or {}
                 for p in (d.get("queryPerformers") or {}).get("performers", []):
                     imgs = p.get("images", [])
@@ -122,7 +145,8 @@ def suggest(query: str, search_type: str = "all") -> list[dict]:
                   }
                 }
                 """
-                data = _query(q, {"input": {"names": query, "page": 1, "per_page": 5}})
+                # Correct field 'name' for StashDB
+                data = await _query(q, {"input": {"name": query, "page": 1, "per_page": 5}})
                 d = data.get("data") or {}
                 for s in (d.get("queryStudios") or {}).get("studios", []):
                     imgs = s.get("images", [])
@@ -140,7 +164,8 @@ def suggest(query: str, search_type: str = "all") -> list[dict]:
                   }
                 }
                 """
-                data = _query(q, {"input": {"title": query, "page": 1, "per_page": 5}})
+                # Correct field 'name' or 'title' for StashDB. Stash-Box SceneQueryInput usually uses 'name'.
+                data = await _query(q, {"input": {"name": query, "page": 1, "per_page": 5}})
                 d = data.get("data") or {}
                 for s in (d.get("queryScenes") or {}).get("scenes", []):
                     imgs = s.get("images", [])
@@ -158,20 +183,23 @@ def suggest(query: str, search_type: str = "all") -> list[dict]:
     return results
 
 
-def get_studio(studio_id: str):
+async def get_studio(studio_id: str):
     q = """
     query GetStudio($id: ID!) {
       findStudio(id: $id) {
         id
         name
+        details
+        urls { url type }
         images { url }
+        parent { id name }
       }
     }
     """
-    return _query(q, {"id": studio_id})
+    return await _query(q, {"id": studio_id})
 
 
-def get_scene(scene_id: str):
+async def get_scene(scene_id: str):
     q = """
     query GetScene($id: ID!) {
       findScene(id: $id) {
@@ -184,33 +212,40 @@ def get_scene(scene_id: str):
         studio { id name }
         performers { performer { id name } }
         tags { name }
+        fingerprints { algorithm hash duration }
       }
     }
     """
-    return _query(q, {"id": scene_id})
+    return await _query(q, {"id": scene_id})
 
 
-def enrich_by_hashes(info_hashes: list[str]) -> dict[str, dict]:
+async def search_scenes(title: str, limit: int = 1):
+    q = """
+    query SearchScenes($input: SceneQueryInput!) {
+      queryScenes(input: $input) {
+        scenes { id title images { url } studio { name } }
+      }
+    }
+    """
+    # Correct field 'name' for StashDB SceneQueryInput
+    data = await _query(q, {"input": {"name": title, "page": 1, "per_page": limit}})
+    d = data.get("data") or {}
+    return (d.get("queryScenes") or {}).get("scenes", [])
+
+
+async def enrich_by_hashes(info_hashes: list[str]) -> dict[str, dict]:
     if not info_hashes:
         return {}
 
     result = {}
     for h in info_hashes:
         try:
-            data = find_by_hash(h)
+            data = await find_by_hash(h)
             d = data.get("data") or {}
             scene = d.get("findSceneByFingerprint")
             if not scene:
                 continue
-            imgs = scene.get("images", [])
-            performers = scene.get("performers", []) or []
-            studio = scene.get("studio", {}) or {}
-            result[h] = {
-                "title": scene.get("title"),
-                "images": [i["url"] for i in imgs] if imgs else [],
-                "performers": [p["name"] for p in performers],
-                "studio": studio.get("name"),
-            }
+            result[h] = scene
         except Exception as e:
             logger.debug("enrich_skip", extra={"hash": h[:8], "error": str(e)})
     return result

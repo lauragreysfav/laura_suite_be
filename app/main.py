@@ -18,7 +18,10 @@ logger = setup_logging()
 async def lifespan(app: FastAPI):
     logger.info("app_starting", extra={"version": "0.2.0"})
     init_db()
-    initialize_search()
+    try:
+        initialize_search()
+    except Exception as e:
+        logger.warning("typesense_init_failed", extra={"error": str(e)})
     logger.info("app_ready")
     yield
     logger.info("app_shutting_down")
@@ -50,18 +53,20 @@ secure_routers = [
     email.router,
     recommender.router,
     stats.router,
-    metrics.router,
-    lib_std_search.router,
     stashdb_search.router,
     standard_search_history.router,
 ]
 for r in secure_routers:
     app.include_router(r, prefix="/api/v1", dependencies=[Depends(get_current_user)])
+
+# These contain WebSockets or need manual auth handling
+app.include_router(lib_std_search.router, prefix="/api/v1")
+app.include_router(metrics.router, prefix="/api/v1")
 app.include_router(auth.router, prefix="/api/v1")
 
 
 @app.get("/")
 def root():
-    return {"app": "Laura Suite", "version": "0.2.0"}
+    return {"app": "Laura Suite", "version": "0.2.1"}
 
 

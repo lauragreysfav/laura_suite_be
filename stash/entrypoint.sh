@@ -1,12 +1,13 @@
-#!/bin/bash
+#!/bin/sh
 set -e
 
 mkdir -p /data/torbox
 nohup rclone mount torbox: /data/torbox \
   --allow-non-empty \
   --allow-other \
-  --vfs-cache-mode writes \
-  --dir-cache-time 30s \
+  --vfs-cache-mode full \
+  --vfs-cache-max-size 10G \
+  --dir-cache-time 5m \
   --config /etc/rclone.conf \
   > /dev/null 2>&1 &
 

@@ -225,10 +225,62 @@ services:
         condition: service_healthy
     restart: unless-stopped
 
+  ai-overhaul-postgres:
+    image: pgvector/pgvector:pg16
+    container_name: ai-overhaul-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: stash_ai_server
+      POSTGRES_USER: stash_ai_server
+      POSTGRES_PASSWORD: stash_ai_server
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U stash_ai_server -d stash_ai_server"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    volumes:
+      - ai_overhaul_postgres:/var/lib/postgresql/data
+
+  ai-overhaul-backend:
+    image: ghcr.io/skier233/stash-ai-server:latest
+    container_name: ai-overhaul-backend
+    restart: unless-stopped
+    depends_on:
+      ai-overhaul-postgres:
+        condition: service_healthy
+    ports:
+      - "127.0.0.1:4153:4153"
+    environment:
+      AI_SERVER_DB_HOST: ai-overhaul-postgres
+      AI_SERVER_DB_PORT: 5432
+      AI_SERVER_DB_NAME: stash_ai_server
+      AI_SERVER_DB_USER: stash_ai_server
+      AI_SERVER_DB_PASSWORD: stash_ai_server
+      AI_SERVER_HOST: 0.0.0.0
+      AI_SERVER_PORT: 4153
+      DOCKER: "true"
+    volumes:
+      - ./config/ai-overhaul:/app/data:rw
+      - ./config/ai-overhaul/plugins:/app/plugins:rw
+      - /mnt/host/d/LauraMedia:/app/stash:ro
+
+  peek-stash-browser:
+    image: carrotwaxr/peek-stash-browser:latest
+    container_name: peek-stash-browser
+    restart: unless-stopped
+    ports:
+      - "6970:80"
+    environment:
+      JWT_SECRET: pq7dKx2mN4vR8wYzAbCdEfGhIjKlMnOpQrStUuVwXyZ123
+    volumes:
+      - peek_data:/app/data
+
 volumes:
   postgres_data:
   redis_data:
   typesense_data:
+  ai_overhaul_postgres:
+  peek_data:
 
 
 

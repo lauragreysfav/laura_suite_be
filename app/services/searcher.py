@@ -1,7 +1,6 @@
 import re
-import httpx
 import logging
-from app.config import settings
+from app.services import prowlarr
 
 logger = logging.getLogger("laura.services.searcher")
 
@@ -50,22 +49,10 @@ def dedup_results(results: list[dict]) -> list[dict]:
 
 
 def search_prowlarr(query: str, indexers: list[int] = None) -> list[dict]:
-    params = {"query": query, "type": "search"}
-    if indexers:
-        params["indexerIds"] = ",".join(str(i) for i in indexers)
-    headers = {"X-Api-Key": settings.prowlarr_api_key}
     try:
-        r = httpx.get(f"{settings.prowlarr_url}/api/v1/search", params=params, headers=headers, timeout=60)
-        r.raise_for_status()
-        data = r.json()
+        data = prowlarr.search(query=query, indexer_ids=indexers)
         logger.info("prowlarr_search_ok", extra={"query": query, "results": len(data)})
         return data
-    except httpx.HTTPStatusError as e:
-        logger.error("prowlarr_search_http_error", extra={"query": query, "status": e.response.status_code, "body": str(e.response.text)[:200]})
-        raise
-    except httpx.TimeoutException:
-        logger.error("prowlarr_search_timeout", extra={"query": query})
-        raise
     except Exception as e:
         logger.exception("prowlarr_search_error", extra={"query": query, "error": str(e)})
         raise

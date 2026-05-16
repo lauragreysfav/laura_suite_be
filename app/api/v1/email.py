@@ -1,9 +1,10 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 from app.database import get_db
-from app.models import EmailConfig
+from app.models import EmailConfig, EmailLog
 from app.tasks.email_tasks import send_email
+from datetime import datetime, timezone
 import logging
 
 logger = logging.getLogger("laura.api.email")
@@ -100,3 +101,23 @@ def update_email_config(body: EmailConfigUpdate, db: Session = Depends(get_db)):
     db.commit()
     logger.info("email_config_updated", extra={"changed_fields": changed})
     return {"status": "updated", "config": _serialize_config(cfg)}
+
+
+@router.get("/logs")
+def get_email_logs(limit: int = Query(50, ge=1, le=200), db: Session = Depends(get_db)):
+    logs = db.query(EmailLog).order_by(EmailLog.sent_at.desc()).limit(limit).all()
+    return {
+        "data": [
+            {
+                "id": l.id,
+                "to_addr": l.to_addr,
+                "subject": l.subject,
+                "status": l.status,
+                "related_type": l.related_type,
+                "related_name": l.related_name,
+                "error_message": l.error_message,
+                "sent_at": l.sent_at.isoformat() if l.sent_at else None,
+            }
+            for l in logs
+        ]
+    }

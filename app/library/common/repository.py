@@ -141,8 +141,14 @@ def search_by_hashes(index: str, hashes: list[str]) -> dict[str, dict]:
             
             fps = d.get("fingerprints") or []
             for fp in fps:
-                val = str(fp).lower()
-                if val in [h.lower() for h in hashes]:
+                # Handle both simple string fingerprints (Typesense) and complex dicts (StashDB JSON)
+                val = ""
+                if isinstance(fp, dict):
+                    val = str(fp.get("hash") or "").lower()
+                else:
+                    val = str(fp).lower()
+                    
+                if val and val in [h.lower() for h in hashes]:
                     result[val] = full_doc
                     
         return result

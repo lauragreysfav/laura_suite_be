@@ -1,3 +1,5 @@
+api_key: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1aWQiOiJMYXVyYSIsInN1YiI6IkFQSUtleSIsImlhdCI6MTc3ODg2NzEyNH0.-9je-MECINHJZ_cRCfq9etxzCdij6wciv_71RWuBkMI
+backup_directory_path: /root/.stash/backups
 blobs_path: /root/.stash/blobs
 blobs_storage: FILESYSTEM
 cache: /cache
@@ -5,18 +7,70 @@ calculate_md5: false
 create_galleries_from_folders: true
 create_image_clip_from_videos: false
 cssenabled: true
+custom_served_folders:
+    /: /root/.stash/custom
 dangerous_allow_public_without_auth: "false"
 database: /root/.stash/stash-go.sqlite
 defaults:
+    generate_task:
+        clippreviews: false
+        covers: true
+        forcetranscodes: false
+        galleryids: []
+        imageids: []
+        imagephashes: true
+        imagepreviews: false
+        imagethumbnails: true
+        interactiveheatmapsspeeds: false
+        markerids: []
+        markerimagepreviews: false
+        markers: false
+        markerscreenshots: false
+        overwrite: false
+        paths: []
+        phashes: true
+        previewoptions:
+            previewexcludeend: null
+            previewexcludestart: null
+            previewpreset: veryfast
+            previewsegmentduration: null
+            previewsegments: null
+        previews: true
+        sceneids: []
+        sprites: true
+        transcodes: false
+    identify_task:
+        options:
+            fieldoptions: []
+            includemaleperformers: true
+            performergenders: []
+            setcoverimage: true
+            setorganized: false
+            skipmultiplematches: null
+            skipmultiplematchtag: null
+            skipsinglenameperformers: true
+            skipsinglenameperformertag: null
+        paths: []
+        sceneids: []
+        sources:
+            - options:
+                fieldoptions: []
+                includemaleperformers: true
+                performergenders: []
+                setcoverimage: true
+                setorganized: false
+                skipmultiplematches: null
+                skipmultiplematchtag: null
+                skipsinglenameperformers: true
+                skipsinglenameperformertag: null
+              source:
+                scraperid: null
+                stashboxendpoint: https://stashdb.org/graphql
+                stashboxindex: null
     scan_task:
         rescan: true
-        scangenerateclippreviews: true
         scangeneratecovers: true
-        scangenerateimagephashes: true
         scangenerateimagepreviews: false
-        scangeneratephashes: true
-        scangeneratepreviews: true
-        scangeneratesprites: true
         scangeneratethumbnails: true
 ffmpeg:
     encoder_preset: h264_nvenc
@@ -31,11 +85,10 @@ minimum_sprites: 10
 no_proxy: localhost,127.0.0.1,192.168.0.0/16,10.0.0.0/8,172.16.0.0/12
 nobrowser: false
 notifications_enabled: true
-parallel_tasks: 2
+parallel_tasks: 4
+password: $2a$04$rYvBmdal1Ta6NC4MElDSweTF6X9drkz.yxSA0xDqjU4Hv1DrhcQQm
 plugins:
-    disabled:
-        - Theme-BlackHole
-        - PlexBetterStyles
+    disabled: []
     package_sources:
         - localpath: community
           name: Community (stable)
@@ -46,6 +99,13 @@ plugins:
         - localpath: feederbox826
           name: feederbox826 plugins
           url: https://feederbox826.github.io/plugins/main/index.yml
+        - localpath: stashinteractivetools
+          name: Stash Interactive Tools
+          url: https://raw.githubusercontent.com/xtc1337/StashInteractiveTools/refs/heads/alpha/stash-alpha.yml
+    settings:
+        background-image:
+            mode: true
+            performerPage: true
 plugins_path: /root/.stash/plugins
 port: 9999
 preview_audio: true
@@ -165,24 +225,20 @@ ui:
             interactiveHeatmapsSpeeds: true
             markerScreenshots: true
             markers: true
-            overwrite: true
+            overwrite: false
             phashes: true
             previewOptions:
-                previewPreset: slow
+                previewPreset: veryfast
                 previewSegmentDuration: 0
                 previewSegments: 0
             previews: true
             sprites: true
         scan:
             rescan: true
-            scanGenerateClipPreviews: true
             scanGenerateCovers: true
-            scanGenerateImagePhashes: true
             scanGenerateImagePreviews: false
-            scanGeneratePhashes: true
-            scanGeneratePreviews: true
-            scanGenerateSprites: true
             scanGenerateThumbnails: true
 use_custom_sprite_interval: false
+username: Laura
 video_file_naming_algorithm: OSHASH
 write_image_thumbnails: true
